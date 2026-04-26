@@ -159,12 +159,13 @@ export default function Calculator() {
         particleCount: 100,
         spread: 70,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#3b82f6', '#f59e0b']
+        colors: ['#10b981', '#3b82f6', '#f59e0b'],
+        zIndex: 99999
       });
-      toast.success(t('plan.notify.saved'));
+      toast.success(settings.language === 'ar' ? 'تم حفظ خطتك بنجاح!' : 'Your plan has been saved successfully!');
     } catch (err) {
       console.error(err);
-      toast.error('Failed to save plan');
+      toast.error(settings.language === 'ar' ? 'حدث خطأ أثناء الحفظ. تأكد من قواعد البيانات.' : 'Failed to save plan. Check Firestore rules.');
     }
   };
 
