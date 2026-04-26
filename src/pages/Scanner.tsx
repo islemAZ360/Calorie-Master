@@ -103,9 +103,13 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
          }
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert(t('scanner.error.analyze'));
+      if (err.message === 'API key is missing.') {
+         alert('API Key is missing. Please make sure you saved it in your Profile.');
+      } else {
+         alert(`${t('scanner.error.analyze')} \nDetails: ${err.message || 'Unknown error'}`);
+      }
     } finally {
       setLoading(false);
     }
