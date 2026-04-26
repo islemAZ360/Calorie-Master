@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Image as ImageIcon, Loader2, Info, KeyRound } from 'lucide-react';
+import { Camera, Image as ImageIcon, Loader2, Info, KeyRound, CheckCircle2 } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
