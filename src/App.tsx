@@ -1,6 +1,6 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { Scale, History as HistoryIcon, Camera, LogIn, User, Flame } from 'lucide-react';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Scale, History as HistoryIcon, Camera, LogIn, User, Flame, Home as HomeIcon } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import Calculator from './pages/Calculator';
@@ -10,6 +10,23 @@ import History from './pages/History';
 import Scanner from './pages/Scanner';
 import Profile from './pages/Profile';
 import { Toaster } from 'react-hot-toast';
+
+function NavLink({ to, children, className = '' }: { to: string; children: React.ReactNode; className?: string }) {
+  const location = useLocation();
+  const isActive = location.pathname === to;
+  return (
+    <Link
+      to={to}
+      className={`px-4 py-2 text-sm rounded-full transition-all duration-200 font-medium flex items-center gap-2 ${
+        isActive
+          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+          : 'text-slate-300 hover:text-white hover:bg-white/10'
+      } ${className}`}
+    >
+      {children}
+    </Link>
+  );
+}
 
 function NavBar() {
   const { user } = useAuth();
@@ -27,9 +44,16 @@ function NavBar() {
         </div>
       </Link>
       
-      <nav className="flex items-center gap-2 sm:gap-6 bg-white/5 p-1.5 rounded-full border border-white/10">
-        <Link to="/" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium">{t('nav.autocalc')}</Link>
-        <Link to="/scanner" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium flex items-center gap-2"><Camera size={16}/> {t('nav.scanner')}</Link>
+      <nav className="flex items-center gap-1.5 sm:gap-2 bg-white/5 p-1.5 rounded-full border border-white/10">
+        <NavLink to="/">
+          <HomeIcon size={16} /> <span className="hidden sm:inline">{settings.language === 'ar' ? 'الرئيسية' : 'Home'}</span>
+        </NavLink>
+        <NavLink to="/calculator">
+          {t('nav.autocalc')}
+        </NavLink>
+        <NavLink to="/scanner">
+          <Camera size={16}/> <span className="hidden sm:inline">{t('nav.scanner')}</span>
+        </NavLink>
         {user ? (
           <>
             {settings.streak && settings.streak > 0 && (
@@ -38,14 +62,36 @@ function NavBar() {
                 <span>{settings.streak}</span>
               </div>
             )}
-            <Link to="/history" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium flex items-center gap-2"><HistoryIcon size={16}/> {t('nav.history')}</Link>
-            <Link to="/profile" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium flex items-center gap-2"><User size={16}/> {t('nav.profile')}</Link>
+            <NavLink to="/history">
+              <HistoryIcon size={16}/> <span className="hidden sm:inline">{t('nav.history')}</span>
+            </NavLink>
+            <NavLink to="/profile">
+              <User size={16}/> <span className="hidden sm:inline">{t('nav.profile')}</span>
+            </NavLink>
           </>
         ) : (
           <Link to="/login" className="px-4 py-2 text-sm text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full transition-all duration-300 font-bold ml-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:scale-105">{t('nav.login')}</Link>
         )}
       </nav>
     </header>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="relative z-10 px-6 py-6 border-t border-white/5 mt-auto">
+      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">
+        <div className="flex items-center gap-2">
+          <Scale className="w-4 h-4 text-emerald-500/50" />
+          <span>Calorie Master &copy; {new Date().getFullYear()}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span>Powered by Gemini AI</span>
+          <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
+          <span>Built with React & Firebase</span>
+        </div>
+      </div>
+    </footer>
   );
 }
 
@@ -77,6 +123,8 @@ export default function App() {
               <Route path="/history" element={<History />} />
               <Route path="/profile" element={<Profile />} />
             </Routes>
+            
+            <Footer />
           </div>
         </BrowserRouter>
       </SettingsProvider>

@@ -5,7 +5,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
-import { Camera, Droplets, Target, Activity, Zap, Loader2, PlusCircle, Lightbulb } from 'lucide-react';
+import { Camera, Droplets, Target, Activity, Zap, Loader2, Lightbulb } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Home() {
@@ -193,8 +193,20 @@ export default function Home() {
         {/* Header */}
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl md:text-4xl font-black text-white">Dashboard</h2>
-          <p className="text-slate-400 mt-1">Here is your progress for today.</p>
+          <h2 className="text-2xl md:text-4xl font-black text-white">{settings.language === 'ar' ? 'لوحة التحكم' : 'Dashboard'}</h2>
+          <p className="text-slate-400 mt-1">
+            {settings.selectedPlan ? (
+              <>
+                {settings.language === 'ar' ? 'خطتك: ' : 'Your plan: '}
+                <span className="text-emerald-400 font-semibold">
+                  {settings.selectedPlan === 'maintain' ? (settings.language === 'ar' ? 'الحفاظ على الوزن' : 'Maintain Weight')
+                   : settings.selectedPlan === 'loss' ? (settings.language === 'ar' ? 'خسارة الوزن' : 'Weight Loss')
+                   : settings.selectedPlan === 'extremeLoss' ? (settings.language === 'ar' ? 'خسارة شديدة' : 'Extreme Loss')
+                   : (settings.language === 'ar' ? 'زيادة الوزن' : 'Weight Gain')}
+                </span>
+              </>
+            ) : (settings.language === 'ar' ? 'تقدمك اليومي' : 'Your progress for today')}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <button 

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Image as ImageIcon, Loader2, Info, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Camera, Image as ImageIcon, Loader2, Info, KeyRound, CheckCircle2, RotateCcw } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -436,6 +436,7 @@ Respond with a JSON object ONLY, in this exact format:
                 {result && !result.unclear && (
                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-emerald-100 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4">
                         <span className="text-slate-400 text-sm uppercase tracking-wider mb-2 font-semibold">{t('scanner.success.title')}</span>
+                        <span className="text-5xl font-black text-emerald-400 mb-4">{result.calories}</span>
                         
                         {/* Impact Bar */}
                         {settings.targetCalories && (
@@ -508,6 +509,14 @@ Respond with a JSON object ONLY, in this exact format:
                               )}
                            </div>
                         )}
+                        {/* Scan New Button */}
+                        <button
+                          onClick={() => { setResult(null); setImageSrc(null); setRecipe(null); setManualIngredients(''); }}
+                          className="w-full mt-6 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                        >
+                          <RotateCcw size={18} />
+                          <span>{settings.language === 'ar' ? 'مسح وجبة جديدة' : 'Scan New Meal'}</span>
+                        </button>
                     </div>
                 )}
              </div>
