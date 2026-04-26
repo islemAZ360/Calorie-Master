@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Image as ImageIcon, Loader2, Info, KeyRound } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,7 +23,28 @@ export default function Scanner() {
   const [extraInfo, setExtraInfo] = useState('');
   const [recipe, setRecipe] = useState<string | null>(null);
   const [generatingRecipe, setGeneratingRecipe] = useState(false);
+  const [todayCalories, setTodayCalories] = useState<number>(0);
   
+  useEffect(() => {
+    if (!user) return;
+    const fetchTodayCalories = async () => {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      try {
+        const q = query(
+          collection(db, 'users', user.uid, 'history'),
+          where('timestamp', '>=', startOfDay.getTime())
+        );
+        const snapshot = await getDocs(q);
+        let sum = 0;
+        snapshot.forEach(doc => sum += doc.data().calories || 0);
+        setTodayCalories(sum);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchTodayCalories();
+  }, [user]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getAiClient = () => {
@@ -415,7 +436,23 @@ Respond with a JSON object ONLY, in this exact format:
                 {result && !result.unclear && (
                     <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-emerald-100 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4">
                         <span className="text-slate-400 text-sm uppercase tracking-wider mb-2 font-semibold">{t('scanner.success.title')}</span>
-                        <span className="text-5xl font-black text-emerald-400 mb-6">{result.calories}</span>
+                        
+                        {/* Impact Bar */}
+                        {settings.targetCalories && (
+                           <div className="w-full mb-6">
+                              <div className="flex justify-between text-xs text-slate-400 mb-1">
+                                 <span>{settings.language === 'ar' ? 'استهلاكك اليوم' : 'Today'} ({todayCalories} kcal)</span>
+                                 <span>{settings.targetCalories} kcal {settings.language === 'ar' ? 'الهدف' : 'Target'}</span>
+                              </div>
+                              <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden flex">
+                                 <div className="h-full bg-emerald-500/50" style={{ width: `${Math.min((todayCalories / settings.targetCalories) * 100, 100)}%` }}></div>
+                                 <div className="h-full bg-emerald-400" style={{ width: `${Math.min((result.calories / settings.targetCalories) * 100, 100)}%` }}></div>
+                              </div>
+                              <div className="text-[10px] text-right text-emerald-400 mt-1">
+                                 +{Math.round((result.calories / settings.targetCalories) * 100)}% {settings.language === 'ar' ? 'من هدفك' : 'of daily goal'}
+                              </div>
+                           </div>
+                        )}
                         
                         {(result.protein !== undefined || result.carbs !== undefined || result.fat !== undefined) && (
                            <div className="grid grid-cols-3 gap-2 w-full mb-6">
@@ -457,6 +494,16 @@ Respond with a JSON object ONLY, in this exact format:
                                    <div className="prose prose-invert prose-emerald max-w-none text-sm leading-relaxed prose-headings:text-indigo-400 prose-a:text-indigo-400">
                                       <ReactMarkdown>{recipe}</ReactMarkdown>
                                    </div>
+                                   <button
+                                     onClick={() => {
+                                       saveHistory(result.calories, 'Recipe: ' + result.details, result.protein, result.carbs, result.fat);
+                                       toast.success(settings.language === 'ar' ? 'تم تسجيل الوصفة!' : 'Recipe logged!');
+                                     }}
+                                     className="w-full mt-6 bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/50 text-indigo-300 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                   >
+                                     <CheckCircle2 size={18} />
+                                     <span>{settings.language === 'ar' ? 'سجل هذه الوصفة في يومياتي' : 'Log this Recipe'}</span>
+                                   </button>
                                 </div>
                               )}
                            </div>

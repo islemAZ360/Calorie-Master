@@ -7,7 +7,6 @@ import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
-import confetti from 'canvas-confetti';
 
 const ACTIVITY_LEVELS = [
   { value: 1, label: 'Basal Metabolic Rate (BMR)' },
@@ -155,13 +154,6 @@ export default function Calculator() {
         targetCalories: Math.round(targetCalories)
       }, { merge: true });
       
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#10b981', '#3b82f6', '#f59e0b'],
-        zIndex: 99999
-      });
       toast.success(settings.language === 'ar' ? 'تم حفظ خطتك بنجاح!' : 'Your plan has been saved successfully!');
     } catch (err) {
       console.error(err);

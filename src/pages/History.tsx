@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
-import { History as HistoryIcon, Activity, Camera, Leaf, Trash2, Droplets } from 'lucide-react';
+import { History as HistoryIcon, Activity, Camera, Leaf, Trash2, Droplets, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
@@ -163,6 +163,11 @@ export default function History() {
       exit={{ opacity: 0, y: -20 }}
       className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
     >
+      {loading ? (
+        <div className="w-full flex flex-col items-center justify-center py-20 space-y-4">
+          <Loader2 className="animate-spin text-emerald-500" size={48} />
+        </div>
+      ) : (
        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -333,6 +338,7 @@ export default function History() {
         </div>
           )}
        </div>
+      )}
     </motion.div>
   );
 }

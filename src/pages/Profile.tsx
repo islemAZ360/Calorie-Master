@@ -10,7 +10,6 @@ import { GoogleGenAI } from '@google/genai';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
-import confetti from 'canvas-confetti';
 
 const ACTIVITY_LEVELS = [
   { value: 1, label: 'Basal Metabolic Rate (BMR)' },
@@ -105,7 +104,6 @@ export default function Profile() {
             msg = diff > 0 ? t('profile.weight.positive.gain') : t('profile.weight.negative.gain');
         }
         toast.success('Profile saved successfully!\n\n' + msg);
-        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } else {
         toast.success('Profile saved successfully!');
       }
@@ -236,7 +234,17 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
     navigate('/login');
   };
 
-  if (loading) return <div className="text-center py-20 text-emerald-400">Loading profile...</div>;
+  if (loading) return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
+    >
+      <div className="w-full flex flex-col items-center justify-center py-20 space-y-4">
+        <Loader2 className="animate-spin text-emerald-500" size={48} />
+      </div>
+    </motion.div>
+  );
 
   return (
     <motion.div 
@@ -486,6 +494,51 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
                   </select>
                 </div>
 
+            </section>
+
+            <hr className="border-white/5 my-4" />
+
+            {/* Goal Settings */}
+            <section className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                    <Target className="text-emerald-500 w-4 h-4" />
+                    {settings.language === 'ar' ? 'أهدافك الحالية' : 'Current Goals'}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {settings.language === 'ar' ? 'عدّل خطتك وهدف السعرات الحرارية يدوياً.' : 'Manually adjust your plan and calorie target.'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-slate-500 mb-2 pl-1">
+                      {settings.language === 'ar' ? 'الخطة المختارة' : 'Selected Plan'}
+                    </label>
+                    <select
+                      value={form.selectedPlan || 'maintain'}
+                      onChange={(e) => setForm({ ...form, selectedPlan: e.target.value as any })}
+                      className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 text-white appearance-none"
+                    >
+                      <option value="maintain">{t('calculator.results.maintain')}</option>
+                      <option value="loss">{t('calculator.results.loss')}</option>
+                      <option value="extremeLoss">{t('calculator.results.extremeLoss')}</option>
+                      <option value="gain">{t('calculator.results.gain')}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-slate-500 mb-2 pl-1">
+                      {settings.language === 'ar' ? 'الهدف اليومي (سعرة)' : 'Daily Target (kcal)'}
+                    </label>
+                    <input
+                      type="number"
+                      value={form.targetCalories || 0}
+                      onChange={(e) => setForm({ ...form, targetCalories: Number(e.target.value) })}
+                      dir="ltr"
+                      className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 text-white text-left"
+                    />
+                  </div>
+                </div>
             </section>
 
             <button

@@ -5,8 +5,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
-import { Camera, Droplets, Target, Activity, Zap, Loader2, PlusCircle } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { Camera, Droplets, Target, Activity, Zap, Loader2, PlusCircle, Lightbulb } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Home() {
@@ -77,15 +76,22 @@ export default function Home() {
         amount: 250,
       });
       toast.success(settings.language === 'ar' ? 'تم تسجيل كوب ماء!' : 'Water logged! +250ml');
-      confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors: ['#06b6d4', '#3b82f6'] });
       
       // Update streak silently
       const docRef = doc(db, 'users', user.uid);
-      const todayStr = new Date().toDateString();
-      if (settings.lastLogDate !== todayStr) {
+      const today = new Date().setHours(0, 0, 0, 0);
+      const lastLog = settings.lastLogDate ? new Date(settings.lastLogDate) : null;
+      
+      if (!lastLog || lastLog.getTime() < today) {
+        let newStreak = settings.streak || 0;
+        if (lastLog && today - lastLog.getTime() > 86400000 * 1.5) {
+          newStreak = 1; // Missed a day
+        } else {
+          newStreak += 1;
+        }
         await setDoc(docRef, {
-          lastLogDate: todayStr,
-          streak: (settings.streak || 0) + 1
+          lastLogDate: today,
+          streak: newStreak
         }, { merge: true });
       }
     } catch (err) {
@@ -95,18 +101,19 @@ export default function Home() {
   };
 
   const progressPercentage = Math.min((todayCalories / targetCalories) * 100, 100);
-  
-  // Confetti if goal is hit perfectly
-  useEffect(() => {
-    if (progressPercentage >= 100 && progressPercentage <= 105) {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.8 },
-        colors: ['#10b981', '#fbbf24']
-      });
-    }
-  }, [progressPercentage]);
+
+  let coachTip = '';
+  if (todayCalories === 0) {
+     coachTip = settings.language === 'ar' ? 'ابدأ يومك بوجبة صحية!' : 'Start your day with a healthy meal!';
+  } else if (todayCalories < targetCalories * 0.5) {
+     coachTip = settings.language === 'ar' ? 'أنت في الطريق الصحيح، لا تنسى شرب الماء.' : 'You are on track. Don\'t forget to stay hydrated.';
+  } else if (todayCalories < targetCalories) {
+     coachTip = settings.language === 'ar' ? 'أنت قريب جداً من هدفك اليومي! واصل.' : 'You are very close to your daily target! Keep going.';
+  } else if (todayCalories <= targetCalories + (targetCalories * 0.1)) {
+     coachTip = settings.language === 'ar' ? 'لقد حققت هدفك اليومي بامتياز.' : 'You have perfectly hit your daily target.';
+  } else {
+     coachTip = settings.language === 'ar' ? 'لقد تجاوزت هدفك، حاول التركيز على النشاط البدني الآن.' : 'You exceeded your target. Focus on physical activity now.';
+  }
 
   if (!user) {
     return (
@@ -244,6 +251,17 @@ export default function Home() {
                 <CircleProgress value={todayProtein} max={targetProtein} color="#fb7185" size={100} strokeWidth={8} label="Pro" unit="g" />
                 <CircleProgress value={todayCarbs} max={targetCarbs} color="#fbbf24" size={100} strokeWidth={8} label="Carb" unit="g" />
                 <CircleProgress value={todayFat} max={targetFat} color="#60a5fa" size={100} strokeWidth={8} label="Fat" unit="g" />
+             </div>
+          </div>
+
+          {/* Coach Tip */}
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-center gap-4">
+             <div className="bg-indigo-500/20 p-3 rounded-full text-indigo-400">
+               <Lightbulb size={24} />
+             </div>
+             <div>
+               <h4 className="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-1">{settings.language === 'ar' ? 'نصيحة المدرب' : 'Coach Tip'}</h4>
+               <p className="text-sm text-indigo-100/80 leading-relaxed font-medium">{coachTip}</p>
              </div>
           </div>
 
