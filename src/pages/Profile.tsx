@@ -365,9 +365,9 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
 
             {/* Default Stats */}
             <section className="space-y-4 border-t border-white/5 pt-6">
-               <h3 className="text-lg font-semibold text-white">{t('profile.default.title')}</h3>
+               <h3 className="text-lg font-semibold text-white">{t('profile.health.title')}</h3>
                <p className="text-sm text-slate-400 leading-relaxed mb-4">
-                 {t('profile.default.desc')}
+                 {t('profile.health.desc')}
                </p>
 
                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
