@@ -118,19 +118,74 @@ export default function Home() {
   if (!user) {
     return (
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        className="flex-1 flex flex-col items-center justify-center p-8 text-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex-1 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden"
       >
-        <Target size={64} className="text-emerald-500 mb-6" />
-        <h2 className="text-3xl font-black text-white mb-4">Welcome to Calorie Master</h2>
-        <p className="text-slate-400 max-w-md mb-8 leading-relaxed">
-          Track your meals intelligently using Gemini AI. Get macro breakdowns, maintain your daily streaks, and stay healthy.
-        </p>
-        <Link to="/login" className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-8 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-emerald-500/20">
-          Get Started Now
-        </Link>
+        {/* Floating background shapes */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl animate-float"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-blue-500/5 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }}></div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+          className="relative z-10"
+        >
+          <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-8 border border-emerald-500/20 animate-pulse-glow">
+            <Target size={40} className="text-emerald-500" />
+          </div>
+          
+          <h2 className="text-4xl md:text-5xl font-black mb-4">
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent animate-gradient">
+              Calorie Master
+            </span>
+          </h2>
+          
+          <p className="text-slate-400 max-w-lg mb-10 leading-relaxed text-lg">
+            {settings.language === 'ar' 
+              ? 'تتبع وجباتك بذكاء باستخدام الذكاء الاصطناعي. احصل على تحليل دقيق للسعرات والماكروز فوراً.'
+              : 'Track your meals intelligently using AI. Get instant calorie & macro breakdowns from a single photo.'}
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="flex flex-col sm:flex-row gap-4 mb-16 relative z-10"
+        >
+          <Link to="/login" className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-8 py-4 rounded-full transition-all hover:scale-105 shadow-lg shadow-emerald-500/25 text-lg">
+            {settings.language === 'ar' ? 'ابدأ الآن' : 'Get Started Free'}
+          </Link>
+          <Link to="/calculator" className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold px-8 py-4 rounded-full transition-all hover:scale-105 text-lg">
+            {settings.language === 'ar' ? 'جرب الحاسبة' : 'Try Calculator'}
+          </Link>
+        </motion.div>
+
+        {/* Feature cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full relative z-10"
+        >
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-left backdrop-blur-sm">
+            <Camera size={24} className="text-emerald-400 mb-3" />
+            <h3 className="text-white font-bold text-sm mb-1">{settings.language === 'ar' ? 'مسح ذكي' : 'AI Scanner'}</h3>
+            <p className="text-slate-400 text-xs leading-relaxed">{settings.language === 'ar' ? 'صور وجبتك واحصل على التحليل فوراً' : 'Snap your meal and get instant analysis'}</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-left backdrop-blur-sm">
+            <Activity size={24} className="text-cyan-400 mb-3" />
+            <h3 className="text-white font-bold text-sm mb-1">{settings.language === 'ar' ? 'حاسبة BMR' : 'BMR Calculator'}</h3>
+            <p className="text-slate-400 text-xs leading-relaxed">{settings.language === 'ar' ? 'احسب احتياجاتك اليومية بدقة' : 'Calculate your exact daily needs'}</p>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-left backdrop-blur-sm">
+            <Zap size={24} className="text-orange-400 mb-3" />
+            <h3 className="text-white font-bold text-sm mb-1">{settings.language === 'ar' ? 'تتبع يومي' : 'Daily Tracking'}</h3>
+            <p className="text-slate-400 text-xs leading-relaxed">{settings.language === 'ar' ? 'تابع تقدمك وحافظ على سلسلتك' : 'Track progress and keep your streak'}</p>
+          </div>
+        </motion.div>
       </motion.div>
     );
   }
@@ -193,7 +248,14 @@ export default function Home() {
         {/* Header */}
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-2xl md:text-4xl font-black text-white">{settings.language === 'ar' ? 'لوحة التحكم' : 'Dashboard'}</h2>
+          <h2 className="text-2xl md:text-4xl font-black text-white">
+            {(() => {
+              const hour = new Date().getHours();
+              if (hour < 12) return settings.language === 'ar' ? 'صباح الخير ☕' : 'Good Morning ☕';
+              if (hour < 18) return settings.language === 'ar' ? 'مساء الخير ☀️' : 'Good Afternoon ☀️';
+              return settings.language === 'ar' ? 'مساء النور 🌙' : 'Good Evening 🌙';
+            })()}
+          </h2>
           <p className="text-slate-400 mt-1">
             {settings.selectedPlan ? (
               <>
@@ -232,23 +294,23 @@ export default function Home() {
         
         {/* Calories Card */}
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl backdrop-blur-sm flex flex-col items-center justify-center lg:col-span-1">
-           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest w-full text-left mb-6">Calories</h3>
+           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest w-full text-left mb-6">{settings.language === 'ar' ? 'السعرات' : 'Calories'}</h3>
            <CircleProgress 
              value={todayCalories} 
              max={targetCalories} 
              color="#10b981" 
              size={220} 
              strokeWidth={16} 
-             label="Consumed"
+             label={settings.language === 'ar' ? 'الاستهلاك' : 'Consumed'}
              unit="kcal"
            />
            <div className="w-full flex justify-between mt-8 pt-6 border-t border-white/5">
               <div className="flex flex-col">
-                <span className="text-xs text-slate-500">Target</span>
+                <span className="text-xs text-slate-500">{settings.language === 'ar' ? 'الهدف' : 'Target'}</span>
                 <span className="text-white font-bold">{targetCalories}</span>
               </div>
               <div className="flex flex-col text-right">
-                <span className="text-xs text-slate-500">Remaining</span>
+                <span className="text-xs text-slate-500">{settings.language === 'ar' ? 'المتبقي' : 'Remaining'}</span>
                 <span className="text-emerald-400 font-bold">{Math.max(targetCalories - todayCalories, 0)}</span>
               </div>
            </div>
@@ -258,7 +320,7 @@ export default function Home() {
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Macros Card */}
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-sm flex-1">
-             <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-6">Macronutrients</h3>
+             <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-6">{settings.language === 'ar' ? 'العناصر الغذائية' : 'Macronutrients'}</h3>
              <div className="flex justify-around items-center h-[140px]">
                 <CircleProgress value={todayProtein} max={targetProtein} color="#fb7185" size={100} strokeWidth={8} label="Pro" unit="g" />
                 <CircleProgress value={todayCarbs} max={targetCarbs} color="#fbbf24" size={100} strokeWidth={8} label="Carb" unit="g" />
@@ -279,21 +341,21 @@ export default function Home() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             <Link to="/scanner" className="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-colors group">
+             <Link to="/scanner" className="bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.03] group">
                 <div className="p-3 bg-emerald-500/20 rounded-full group-hover:scale-110 transition-transform"><Camera size={24} /></div>
-                <span className="text-xs font-bold uppercase tracking-wider">Scan Meal</span>
+                <span className="text-xs font-bold uppercase tracking-wider">{settings.language === 'ar' ? 'مسح وجبة' : 'Scan Meal'}</span>
              </Link>
-             <Link to="/history" className="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-colors group">
+             <Link to="/history" className="bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 text-cyan-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.03] group">
                 <div className="p-3 bg-cyan-500/20 rounded-full group-hover:scale-110 transition-transform"><Droplets size={24} /></div>
-                <span className="text-xs font-bold uppercase tracking-wider">History</span>
+                <span className="text-xs font-bold uppercase tracking-wider">{settings.language === 'ar' ? 'السجل' : 'History'}</span>
              </Link>
-             <Link to="/calculator" className="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-colors group">
+             <Link to="/calculator" className="bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 text-purple-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.03] group">
                 <div className="p-3 bg-purple-500/20 rounded-full group-hover:scale-110 transition-transform"><Activity size={24} /></div>
-                <span className="text-xs font-bold uppercase tracking-wider">Calculator</span>
+                <span className="text-xs font-bold uppercase tracking-wider">{settings.language === 'ar' ? 'الحاسبة' : 'Calculator'}</span>
              </Link>
-             <Link to="/profile" className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-colors group">
+             <Link to="/profile" className="bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.03] group">
                 <div className="p-3 bg-rose-500/20 rounded-full group-hover:scale-110 transition-transform"><Target size={24} /></div>
-                <span className="text-xs font-bold uppercase tracking-wider">Goals</span>
+                <span className="text-xs font-bold uppercase tracking-wider">{settings.language === 'ar' ? 'الأهداف' : 'Goals'}</span>
              </Link>
           </div>
         </div>
