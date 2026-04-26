@@ -3,10 +3,11 @@ import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, doc, setDoc } from 'firebase/firestore';
 import { Link } from 'react-router-dom';
-import { Camera, Droplets, Target, Activity, Zap } from 'lucide-react';
+import { Camera, Droplets, Target, Activity, Zap, Loader2, PlusCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import toast from 'react-hot-toast';
 
 export default function Home() {
   const { user } = useAuth();
@@ -65,6 +66,33 @@ export default function Home() {
 
     fetchTodayData();
   }, [user]);
+
+  const handleAddWater = async () => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, 'users', user.uid, 'history'), {
+        userId: user.uid,
+        type: 'water',
+        timestamp: Date.now(),
+        amount: 250,
+      });
+      toast.success(settings.language === 'ar' ? 'تم تسجيل كوب ماء!' : 'Water logged! +250ml');
+      confetti({ particleCount: 30, spread: 50, origin: { y: 0.8 }, colors: ['#06b6d4', '#3b82f6'] });
+      
+      // Update streak silently
+      const docRef = doc(db, 'users', user.uid);
+      const todayStr = new Date().toDateString();
+      if (settings.lastLogDate !== todayStr) {
+        await setDoc(docRef, {
+          lastLogDate: todayStr,
+          streak: (settings.streak || 0) + 1
+        }, { merge: true });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to log water');
+    }
+  };
 
   const progressPercentage = Math.min((todayCalories / targetCalories) * 100, 100);
   
@@ -149,20 +177,35 @@ export default function Home() {
       exit={{ opacity: 0, y: -20 }}
       className="flex-1 max-w-5xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-8"
     >
-      {/* Header */}
+      {loading ? (
+        <div className="w-full flex items-center justify-center py-20">
+          <Loader2 className="animate-spin text-emerald-500" size={48} />
+        </div>
+      ) : (
+      <>
+        {/* Header */}
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl md:text-4xl font-black text-white">Dashboard</h2>
           <p className="text-slate-400 mt-1">Here is your progress for today.</p>
         </div>
-        {settings.streak && settings.streak > 0 && (
-           <div className="flex flex-col items-end">
-             <span className="text-[10px] text-orange-500 uppercase tracking-widest font-bold">Current Streak</span>
-             <div className="text-2xl font-black text-orange-400 flex items-center gap-1">
-               {settings.streak} <Zap size={24} className="fill-orange-500" />
+        <div className="flex items-center gap-4">
+          <button 
+             onClick={handleAddWater}
+             className="hidden sm:flex items-center gap-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 px-4 py-2 rounded-full font-bold transition-all"
+          >
+             <Droplets size={16} /> <span>{settings.language === 'ar' ? 'أضف ماء' : 'Water'}</span>
+          </button>
+          
+          {settings.streak && settings.streak > 0 ? (
+             <div className="flex flex-col items-end">
+               <span className="text-[10px] text-orange-500 uppercase tracking-widest font-bold">Current Streak</span>
+               <div className="text-2xl font-black text-orange-400 flex items-center gap-1">
+                 {settings.streak} <Zap size={24} className="fill-orange-500" />
+               </div>
              </div>
-           </div>
-        )}
+          ) : null}
+        </div>
       </div>
 
       {/* Main Stats Grid */}
@@ -226,6 +269,8 @@ export default function Home() {
         </div>
 
       </div>
+      </>
+      )}
     </motion.div>
   );
 }
