@@ -20,7 +20,7 @@ function NavBar() {
           <Scale className="h-6 w-6 text-zinc-950" />
         </span>
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">Calorie Master</h1>
+          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent group-hover:from-emerald-300 group-hover:to-teal-400 transition-all duration-300">Calorie Master</h1>
           <p className="text-slate-400 text-[10px] sm:text-xs">{t('app.tagline')}</p>
         </div>
       </Link>
@@ -34,7 +34,7 @@ function NavBar() {
             <Link to="/profile" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium flex items-center gap-2"><User size={16}/> {t('nav.profile')}</Link>
           </>
         ) : (
-          <Link to="/login" className="px-4 py-2 text-sm text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full transition-colors font-bold ml-2">{t('nav.login')}</Link>
+          <Link to="/login" className="px-4 py-2 text-sm text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full transition-all duration-300 font-bold ml-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:scale-105">{t('nav.login')}</Link>
         )}
       </nav>
     </header>
