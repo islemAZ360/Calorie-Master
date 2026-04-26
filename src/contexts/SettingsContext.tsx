@@ -17,6 +17,8 @@ export interface UserSettings {
   activity: number;
   selectedPlan?: 'maintain' | 'loss' | 'extremeLoss' | 'gain' | null;
   targetCalories?: number | null;
+  streak?: number;
+  lastLogDate?: number;
 }
 
 export const defaultSettings: UserSettings = {

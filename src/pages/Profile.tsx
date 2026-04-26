@@ -8,6 +8,7 @@ import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { User, Key, CheckCircle, XCircle, Loader2, Save, LogOut, BrainCircuit, Calculator, Activity } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 
 const ACTIVITY_LEVELS = [
   { value: 1, label: 'Basal Metabolic Rate (BMR)' },
@@ -62,7 +63,7 @@ export default function Profile() {
     try {
       const ai = new GoogleGenAI({ apiKey: form.geminiApiKey });
       await ai.models.generateContent({
-        model: 'gemini-3.0-flash',
+        model: 'gemini-3-flash-preview',
         contents: 'Test connection. Respond "OK" only.'
       });
       setVerifyStatus('success');
@@ -215,7 +216,7 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
 
       try {
           const response = await ai.models.generateContent({
-            model: 'gemini-3.0-flash',
+            model: 'gemini-3-flash-preview',
             contents: prompt,
           });
           setAnalysisResult(response.text || 'No response generated.');
@@ -235,7 +236,12 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
   if (loading) return <div className="text-center py-20 text-emerald-400">Loading profile...</div>;
 
   return (
-    <div className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
+    >
        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
           
           <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
@@ -490,6 +496,6 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
           </form>
 
        </div>
-    </div>
+    </motion.div>
   );
 }

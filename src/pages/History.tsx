@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { collection, query, orderBy, getDocs, doc, deleteDoc, addDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, deleteDoc, addDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
@@ -7,12 +7,16 @@ import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { History as HistoryIcon, Activity, Camera, Leaf, Trash2, Droplets } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface HistoryItem {
   id: string;
   type: string;
   timestamp: number;
   calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
   details: string;
 }
 
@@ -123,13 +127,41 @@ export default function History() {
       };
       const docRef = await addDoc(collection(db, 'users', user.uid, 'history'), newItem);
       setHistory(prev => [{ id: docRef.id, ...newItem }, ...prev]);
+
+      // Streak Logic
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      let currentStreak = settings.streak || 0;
+      const lastLog = settings.lastLogDate ? new Date(settings.lastLogDate) : null;
+      
+      if (!lastLog || lastLog.getTime() < today) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (lastLog && lastLog.getTime() === yesterday.getTime()) {
+          currentStreak += 1;
+        } else if (!lastLog || lastLog.getTime() < yesterday.getTime()) {
+          currentStreak = 1;
+        }
+        
+        await setDoc(doc(db, 'users', user.uid), {
+          streak: currentStreak,
+          lastLogDate: today
+        }, { merge: true });
+      }
+
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/history`);
     }
   };
 
   return (
-    <div className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
+    >
        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -251,8 +283,16 @@ export default function History() {
                <div key={date} className="space-y-4">
                   <h4 className="text-sm font-bold text-slate-400 border-b border-white/5 pb-2">{date}</h4>
                   <div className="space-y-3">
-                    {items.map((item) => (
-                       <div key={item.id} className="bg-black/30 border border-white/5 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-white/5 transition-colors group">
+                    <AnimatePresence>
+                      {items.map((item) => (
+                         <motion.div 
+                            key={item.id} 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="bg-black/30 border border-white/5 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-white/5 transition-colors group"
+                         >
                           <div className={`p-3 rounded-xl shrink-0 ${item.type === 'bmr' ? 'bg-blue-500/10 text-blue-400' : item.type === 'water' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
                              {item.type === 'bmr' ? <Activity size={24} /> : item.type === 'water' ? <Droplets size={24} /> : <Camera size={24} />}
                           </div>
@@ -274,16 +314,24 @@ export default function History() {
                             <div className="sm:ml-4 flex flex-col items-start sm:items-end w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-white/5" dir="ltr">
                                <span className="text-2xl font-black tabular-nums tracking-tighter text-white">{Math.round(item.calories)}</span>
                                <span className="text-[10px] text-emerald-500 uppercase font-bold tracking-wider text-right">{t('history.calories')}</span>
+                               {(item.protein !== undefined || item.carbs !== undefined || item.fat !== undefined) ? (
+                                  <div className="flex gap-2 mt-2 text-[10px] font-medium tracking-wide">
+                                     {item.protein ? <span className="text-rose-400">{item.protein}g P</span> : null}
+                                     {item.carbs ? <span className="text-amber-400">{item.carbs}g C</span> : null}
+                                     {item.fat ? <span className="text-blue-400">{item.fat}g F</span> : null}
+                                  </div>
+                               ) : null}
                             </div>
                           )}
-                       </div>
-                    ))}
+                       </motion.div>
+                      ))}
+                    </AnimatePresence>
                   </div>
                </div>
             ))}
         </div>
           )}
        </div>
-    </div>
+    </motion.div>
   );
 }

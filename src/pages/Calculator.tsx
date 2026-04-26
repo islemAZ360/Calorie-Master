@@ -5,6 +5,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { db } from '../firebase';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
+import { motion } from 'motion/react';
 
 const ACTIVITY_LEVELS = [
   { value: 1, label: 'Basal Metabolic Rate (BMR)' },
@@ -169,7 +170,12 @@ export default function Calculator() {
   const valExtreme = unitSystem === 'us' ? '2' : '1';
 
   return (
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <motion.main 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start"
+      >
         {/* Input Panel */}
         <section className="lg:col-span-5 flex flex-col gap-6 w-full">
           <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
@@ -543,6 +549,6 @@ export default function Calculator() {
             </div>
           )}
         </section>
-      </main>
+      </motion.main>
   );
 }

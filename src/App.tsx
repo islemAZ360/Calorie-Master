@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { Scale, History as HistoryIcon, Camera, LogIn, User } from 'lucide-react';
+import { Scale, History as HistoryIcon, Camera, LogIn, User, Flame } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import Calculator from './pages/Calculator';
@@ -11,7 +11,7 @@ import Profile from './pages/Profile';
 
 function NavBar() {
   const { user } = useAuth();
-  const { t } = useSettings();
+  const { settings, t } = useSettings();
   
   return (
     <header className="relative z-10 px-6 md:px-12 py-4 flex flex-col sm:flex-row justify-between items-center border-b border-white/5 bg-zinc-950/50 backdrop-blur-sm gap-4">
@@ -30,6 +30,12 @@ function NavBar() {
         <Link to="/scanner" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium flex items-center gap-2"><Camera size={16}/> {t('nav.scanner')}</Link>
         {user ? (
           <>
+            {settings.streak && settings.streak > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-full font-bold text-sm shadow-[0_0_10px_rgba(249,115,22,0.2)]">
+                <Flame size={16} className="fill-orange-500 text-orange-500" />
+                <span>{settings.streak}</span>
+              </div>
+            )}
             <Link to="/history" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium flex items-center gap-2"><HistoryIcon size={16}/> {t('nav.history')}</Link>
             <Link to="/profile" className="px-4 py-2 text-sm text-slate-300 hover:text-white rounded-full hover:bg-white/10 transition-colors font-medium flex items-center gap-2"><User size={16}/> {t('nav.profile')}</Link>
           </>

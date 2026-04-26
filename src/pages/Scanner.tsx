@@ -4,9 +4,10 @@ import { GoogleGenAI } from '@google/genai';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { Link } from 'react-router-dom';
+import { motion } from 'motion/react';
 
 export default function Scanner() {
   const { user } = useAuth();
@@ -14,7 +15,7 @@ export default function Scanner() {
   const [mode, setMode] = useState<'ingredients' | 'meal'>('meal');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ calories: number; details: string, unclear?: boolean } | null>(null);
+  const [result, setResult] = useState<{ calories: number; protein?: number; carbs?: number; fat?: number; details: string, unclear?: boolean } | null>(null);
   const [manualIngredients, setManualIngredients] = useState('');
   const [showExtraInfo, setShowExtraInfo] = useState(false);
   const [extraInfo, setExtraInfo] = useState('');
@@ -58,6 +59,9 @@ If the food or ingredients are NOT clear enough or somewhat hidden, respond exac
 Otherwise, respond with a JSON object ONLY, in this exact format:
 {
   "calories": 450,
+  "protein": 30,
+  "carbs": 40,
+  "fat": 15,
   "details": "A breakdown of the calories here..."
 }`;
 
@@ -71,7 +75,7 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
 
       // 3. Call Gemini API
       const response = await ai.models.generateContent({
-        model: 'gemini-3.0-flash',
+        model: 'gemini-3-flash-preview',
         contents: [
           {
             role: 'user',
@@ -95,8 +99,15 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
          try {
            const parsed = JSON.parse(jsonStr);
            const roundedCalories = Math.round(parsed.calories);
-           setResult({ calories: roundedCalories, details: parsed.details, unclear: false });
-           saveHistory(roundedCalories, parsed.details);
+           setResult({ 
+             calories: roundedCalories, 
+             protein: Math.round(parsed.protein || 0),
+             carbs: Math.round(parsed.carbs || 0),
+             fat: Math.round(parsed.fat || 0),
+             details: parsed.details, 
+             unclear: false 
+           });
+           saveHistory(roundedCalories, parsed.details, parsed.protein, parsed.carbs, parsed.fat);
          } catch (e) {
            console.error("Failed to parse", text);
            setResult({ calories: 0, details: text, unclear: true });
@@ -126,6 +137,9 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
 Respond with a JSON object ONLY, in this exact format:
 {
   "calories": 450,
+  "protein": 30,
+  "carbs": 40,
+  "fat": 15,
   "details": "A breakdown of the calories here..."
 }`;
 
@@ -134,7 +148,7 @@ Respond with a JSON object ONLY, in this exact format:
       }
 
        const response = await ai.models.generateContent({
-        model: 'gemini-3.0-flash',
+        model: 'gemini-3-flash-preview',
         contents: [ prompt ],
         config: { temperature: 0.2 }
        });
@@ -142,8 +156,15 @@ Respond with a JSON object ONLY, in this exact format:
        const jsonStr = text.replace(/```json/g, '').replace(/```/g, '').trim();
        const parsed = JSON.parse(jsonStr);
        const roundedCalories = Math.round(parsed.calories);
-       setResult({ calories: roundedCalories, details: parsed.details, unclear: false });
-       saveHistory(roundedCalories, parsed.details);
+       setResult({ 
+         calories: roundedCalories, 
+         protein: Math.round(parsed.protein || 0),
+         carbs: Math.round(parsed.carbs || 0),
+         fat: Math.round(parsed.fat || 0),
+         details: parsed.details, 
+         unclear: false 
+       });
+       saveHistory(roundedCalories, parsed.details, parsed.protein, parsed.carbs, parsed.fat);
     } catch(err) {
        console.error(err);
        alert(t('scanner.error.calc'));
@@ -185,7 +206,7 @@ Respond with a JSON object ONLY, in this exact format:
     }
   };
 
-  const saveHistory = async (calories: number, details: string) => {
+  const saveHistory = async (calories: number, details: string, protein?: number, carbs?: number, fat?: number) => {
       if (!user) return;
       try {
         await addDoc(collection(db, 'users', user.uid, 'history'), {
@@ -193,9 +214,35 @@ Respond with a JSON object ONLY, in this exact format:
           type: 'food',
           timestamp: Date.now(),
           calories: calories,
+          protein: protein || 0,
+          carbs: carbs || 0,
+          fat: fat || 0,
           details: details,
           // Omitting imageUrl to save DB space, but we could upload it to storage
         });
+
+        // Streak Logic
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        let currentStreak = settings.streak || 0;
+        const lastLog = settings.lastLogDate ? new Date(settings.lastLogDate) : null;
+        
+        if (!lastLog || lastLog.getTime() < today) {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          
+          if (lastLog && lastLog.getTime() === yesterday.getTime()) {
+            currentStreak += 1;
+          } else if (!lastLog || lastLog.getTime() < yesterday.getTime()) {
+            currentStreak = 1;
+          }
+          
+          await setDoc(doc(db, 'users', user.uid), {
+            streak: currentStreak,
+            lastLogDate: today
+          }, { merge: true });
+        }
+
         await checkDailyCalories(calories);
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/history`);
@@ -203,7 +250,12 @@ Respond with a JSON object ONLY, in this exact format:
   }
 
   return (
-    <div className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
+    >
        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-sm">
           <h2 className="text-xl font-semibold text-white mb-6">{t('scanner.title')}</h2>
 
@@ -333,6 +385,23 @@ Respond with a JSON object ONLY, in this exact format:
                         <span className="text-slate-400 text-sm uppercase tracking-wider mb-2 font-semibold">{t('scanner.success.title')}</span>
                         <span className="text-5xl font-black text-emerald-400 mb-6">{result.calories}</span>
                         
+                        {(result.protein !== undefined || result.carbs !== undefined || result.fat !== undefined) && (
+                           <div className="grid grid-cols-3 gap-2 w-full mb-6">
+                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center">
+                                 <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Protein</span>
+                                 <span className="text-xl font-bold text-rose-400">{result.protein}g</span>
+                              </div>
+                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center">
+                                 <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Carbs</span>
+                                 <span className="text-xl font-bold text-amber-400">{result.carbs}g</span>
+                              </div>
+                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center">
+                                 <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Fat</span>
+                                 <span className="text-xl font-bold text-blue-400">{result.fat}g</span>
+                              </div>
+                           </div>
+                        )}
+
                         <div className="bg-black/30 p-4 rounded-xl text-sm leading-relaxed text-left w-full" dir={settings.language === 'ar' ? 'rtl' : 'ltr'}>
                            <strong className="text-emerald-400 block mb-2">{t('scanner.success.breakdown')}</strong>
                            {result.details}
@@ -342,6 +411,6 @@ Respond with a JSON object ONLY, in this exact format:
              </div>
           )}
        </div>
-    </div>
+    </motion.div>
   );
 }
