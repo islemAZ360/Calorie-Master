@@ -21,11 +21,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId)
-                    && isValidUser(incoming())
-                    && incoming().createdAt == request.time.toMillis();
+                    && isValidUser(incoming());
       allow update: if isSignedIn() && request.auth.uid == userId && isValidId(userId)
-                    && isValidUser(incoming())
-                    && incoming().createdAt == existing().createdAt;
+                    && isValidUser(incoming());
       
       // History subcollection
       match /history/{entryId} {
