@@ -62,7 +62,7 @@ export default function Profile() {
     try {
       const ai = new GoogleGenAI({ apiKey: form.geminiApiKey });
       await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3.0-flash',
         contents: 'Test connection. Respond "OK" only.'
       });
       setVerifyStatus('success');
@@ -215,7 +215,7 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
 
       try {
           const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.0-flash',
             contents: prompt,
           });
           setAnalysisResult(response.text || 'No response generated.');

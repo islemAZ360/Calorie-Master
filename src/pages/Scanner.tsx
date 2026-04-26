@@ -71,7 +71,7 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
 
       // 3. Call Gemini API
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3.0-flash',
         contents: [
           {
             role: 'user',
@@ -134,7 +134,7 @@ Respond with a JSON object ONLY, in this exact format:
       }
 
        const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-3.0-flash',
         contents: [ prompt ],
         config: { temperature: 0.2 }
        });
