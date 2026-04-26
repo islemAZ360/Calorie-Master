@@ -6,6 +6,8 @@ import { db } from '../firebase';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 const ACTIVITY_LEVELS = [
   { value: 1, label: 'Basal Metabolic Rate (BMR)' },
@@ -138,6 +140,31 @@ export default function Calculator() {
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/history`);
       }
+    }
+  };
+
+  const handleSelectPlan = async (plan: 'maintain' | 'loss' | 'extremeLoss' | 'gain', targetCalories: number) => {
+    if (!user) {
+      toast.error(settings.language === 'ar' ? 'يجب تسجيل الدخول لحفظ الخطة' : 'You must be logged in to save a plan');
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), {
+        selectedPlan: plan,
+        targetCalories: Math.round(targetCalories)
+      }, { merge: true });
+      
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#3b82f6', '#f59e0b']
+      });
+      toast.success(t('plan.notify.saved'));
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to save plan');
     }
   };
 

@@ -4,10 +4,12 @@ import { Scale, History as HistoryIcon, Camera, LogIn, User, Flame } from 'lucid
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
 import Calculator from './pages/Calculator';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import History from './pages/History';
 import Scanner from './pages/Scanner';
 import Profile from './pages/Profile';
+import { Toaster } from 'react-hot-toast';
 
 function NavBar() {
   const { user } = useAuth();
@@ -57,10 +59,18 @@ export default function App() {
             <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_60%)] -translate-y-1/2 translate-x-1/3 pointer-events-none transform-gpu"></div>
             <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08)_0%,transparent_60%)] translate-y-1/3 -translate-x-1/4 pointer-events-none transform-gpu"></div>
 
+            <Toaster 
+              position="top-center" 
+              toastOptions={{ 
+                style: { background: '#18181b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } 
+              }} 
+            />
+
             <NavBar />
             
             <Routes>
-              <Route path="/" element={<Calculator />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/calculator" element={<Calculator />} />
               <Route path="/login" element={<Login />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/history" element={<History />} />

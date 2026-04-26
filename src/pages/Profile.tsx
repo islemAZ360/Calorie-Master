@@ -9,6 +9,8 @@ import { User, Key, CheckCircle, XCircle, Loader2, Save, LogOut, BrainCircuit, C
 import { GoogleGenAI } from '@google/genai';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
+import confetti from 'canvas-confetti';
 
 const ACTIVITY_LEVELS = [
   { value: 1, label: 'Basal Metabolic Rate (BMR)' },
@@ -102,13 +104,14 @@ export default function Profile() {
         } else if (settings.selectedPlan === 'gain') {
             msg = diff > 0 ? t('profile.weight.positive.gain') : t('profile.weight.negative.gain');
         }
-        alert('Profile saved successfully!\n\n' + msg);
+        toast.success('Profile saved successfully!\n\n' + msg);
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } else {
-        alert('Profile saved successfully!');
+        toast.success('Profile saved successfully!');
       }
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `users/${user.uid}`);
-      alert('Failed to save profile. Ensure Firestore rules are configured correctly for your custom config.');
+      toast.error('Failed to save profile. Ensure Firestore rules are configured correctly for your custom config.');
     } finally {
       setSaving(false);
     }

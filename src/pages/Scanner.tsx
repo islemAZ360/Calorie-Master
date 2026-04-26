@@ -8,6 +8,8 @@ import { collection, addDoc, query, where, getDocs, doc, setDoc } from 'firebase
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
+import toast from 'react-hot-toast';
+import ReactMarkdown from 'react-markdown';
 
 export default function Scanner() {
   const { user } = useAuth();
@@ -19,6 +21,8 @@ export default function Scanner() {
   const [manualIngredients, setManualIngredients] = useState('');
   const [showExtraInfo, setShowExtraInfo] = useState(false);
   const [extraInfo, setExtraInfo] = useState('');
+  const [recipe, setRecipe] = useState<string | null>(null);
+  const [generatingRecipe, setGeneratingRecipe] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,6 +49,7 @@ export default function Scanner() {
     if (!imageSrc) return;
     setLoading(true);
     setResult(null);
+    setRecipe(null);
 
     try {
       const ai = getAiClient();
@@ -117,9 +122,9 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
     } catch (err: any) {
       console.error(err);
       if (err.message === 'API key is missing.') {
-         alert('API Key is missing. Please make sure you saved it in your Profile.');
+         toast.error('API Key is missing. Please make sure you saved it in your Profile.');
       } else {
-         alert(`${t('scanner.error.analyze')} \nDetails: ${err.message || 'Unknown error'}`);
+         toast.error(`${t('scanner.error.analyze')} \nDetails: ${err.message || 'Unknown error'}`);
       }
     } finally {
       setLoading(false);
@@ -130,6 +135,7 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
     e.preventDefault();
     if (!manualIngredients) return;
     setLoading(true);
+    setRecipe(null);
     
     try {
        const ai = getAiClient();
@@ -167,11 +173,37 @@ Respond with a JSON object ONLY, in this exact format:
        saveHistory(roundedCalories, parsed.details, parsed.protein, parsed.carbs, parsed.fat);
     } catch(err) {
        console.error(err);
-       alert(t('scanner.error.calc'));
+       toast.error(t('scanner.error.calc'));
     } finally {
        setLoading(false);
     }
   }
+
+  const handleGenerateRecipe = async () => {
+    if (!result) return;
+    setGeneratingRecipe(true);
+    
+    try {
+      const ai = getAiClient();
+      let prompt = `You are a professional chef. Based on the ingredients the user just provided or scanned, which are detailed here: "${result.details}", suggest a healthy and delicious recipe. Format the response nicely using Markdown (headings, bullet points for ingredients, numbered lists for instructions).`;
+
+      if (settings.language === 'ar') {
+         prompt += `\n\nCRITICAL: You MUST write the entire recipe strictly in Arabic language.`;
+      }
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: [ prompt ],
+      });
+      
+      setRecipe(response.text || '');
+    } catch(err) {
+       console.error(err);
+       toast.error(settings.language === 'ar' ? 'فشل في توليد الوصفة' : 'Failed to generate recipe');
+    } finally {
+       setGeneratingRecipe(false);
+    }
+  };
 
   const checkDailyCalories = async (newCalories: number) => {
     if (!user || !settings.targetCalories) return;
@@ -196,10 +228,10 @@ Respond with a JSON object ONLY, in this exact format:
       
       if (sum > settings.targetCalories + 100) {
         const excess = Math.round(sum - settings.targetCalories);
-        alert(t('scanner.alert.exceeded').replace('{excess}', String(excess)));
+        toast.error(t('scanner.alert.exceeded').replace('{excess}', String(excess)));
       } else if (sum > settings.targetCalories - 300 && sum <= settings.targetCalories) {
         const remaining = Math.round(settings.targetCalories - sum);
-        alert(t('scanner.alert.close').replace('{remaining}', String(remaining)));
+        toast.success(t('scanner.alert.close').replace('{remaining}', String(remaining)));
       }
     } catch(err) {
       console.error("Failed to check daily calories", err);
@@ -406,6 +438,29 @@ Respond with a JSON object ONLY, in this exact format:
                            <strong className="text-emerald-400 block mb-2">{t('scanner.success.breakdown')}</strong>
                            {result.details}
                         </div>
+                        
+                        {mode === 'ingredients' && (
+                           <div className="w-full mt-6 flex flex-col gap-4">
+                              {!recipe && (
+                                <button
+                                  onClick={handleGenerateRecipe}
+                                  disabled={generatingRecipe}
+                                  className="w-full bg-indigo-500 hover:bg-indigo-400 text-white font-bold py-3 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                  {generatingRecipe ? <Loader2 className="animate-spin" size={20} /> : <Info size={20} />}
+                                  <span>{settings.language === 'ar' ? 'اقترح وصفة بهذه المكونات' : 'Suggest a Recipe'}</span>
+                                </button>
+                              )}
+                              
+                              {recipe && (
+                                <div className="bg-black/40 border border-indigo-500/30 rounded-xl p-6 text-left w-full mt-4" dir={settings.language === 'ar' ? 'rtl' : 'ltr'}>
+                                   <div className="prose prose-invert prose-emerald max-w-none text-sm leading-relaxed prose-headings:text-indigo-400 prose-a:text-indigo-400">
+                                      <ReactMarkdown>{recipe}</ReactMarkdown>
+                                   </div>
+                                </div>
+                              )}
+                           </div>
+                        )}
                     </div>
                 )}
              </div>

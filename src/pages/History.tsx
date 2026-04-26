@@ -8,6 +8,7 @@ import { History as HistoryIcon, Activity, Camera, Leaf, Trash2, Droplets } from
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
+import toast from 'react-hot-toast';
 
 interface HistoryItem {
   id: string;
@@ -110,7 +111,7 @@ export default function History() {
         setHistory(prev => prev.filter(item => item.id !== id));
       } catch (err) {
         handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/history/${id}`);
-        alert('Failed to delete history item.');
+        toast.error('Failed to delete history item.');
       }
     }
   };
