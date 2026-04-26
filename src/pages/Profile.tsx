@@ -257,13 +257,16 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
           
           <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
              <div className="flex items-center gap-3">
-               <div className="bg-emerald-500/10 p-2 rounded-lg">
+               <div className="bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
                   <User className="text-emerald-500 w-6 h-6" />
                </div>
-               <h2 className="text-2xl font-bold text-white tracking-tight">{t('nav.profile')}</h2>
+               <div>
+                 <h2 className="text-2xl font-bold text-white tracking-tight">{t('nav.profile')}</h2>
+                 <p className="text-xs text-slate-400">{user?.email}</p>
+               </div>
              </div>
-             <button onClick={handleLogout} className="flex items-center gap-2 text-rose-400 hover:text-rose-300 transition-colors text-sm font-medium">
-               <LogOut size={16} /> Logout
+             <button onClick={handleLogout} className="flex items-center gap-2 text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 px-4 py-2 rounded-xl transition-all text-sm font-medium">
+               <LogOut size={16} /> {settings.language === 'ar' ? 'تسجيل خروج' : 'Logout'}
              </button>
           </div>
 

@@ -309,8 +309,16 @@ Respond with a JSON object ONLY, in this exact format:
       exit={{ opacity: 0, y: -20 }}
       className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
     >
-       <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-2xl backdrop-blur-sm">
-          <h2 className="text-xl font-semibold text-white mb-6">{t('scanner.title')}</h2>
+       <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
+              <Camera size={22} className="text-emerald-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">{t('scanner.title')}</h2>
+              <p className="text-xs text-slate-400">{settings.language === 'ar' ? 'التقط صورة ودع الذكاء الاصطناعي يحللها' : 'Take a photo and let AI analyze it'}</p>
+            </div>
+          </div>
 
           {/* Mode Selection */}
           <div className="flex bg-zinc-900 rounded-xl p-1 border border-white/10 mb-6">
@@ -331,12 +339,12 @@ Respond with a JSON object ONLY, in this exact format:
           {!imageSrc ? (
             <div 
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-emerald-500/30 rounded-2xl p-12 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500/5 transition-colors group"
+              className="border-2 border-dashed border-emerald-500/30 rounded-2xl p-16 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500/5 hover:border-emerald-500/50 transition-all duration-300 group"
             >
-              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform mb-4">
-                <Camera size={32} />
+              <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-300 mb-5">
+                <Camera size={36} />
               </div>
-              <p className="text-slate-300 font-medium mb-1">{t('scanner.upload.title')}</p>
+              <p className="text-white font-semibold mb-1 text-lg">{t('scanner.upload.title')}</p>
               <p className="text-slate-500 text-sm">{t('scanner.upload.desc')}</p>
               <input 
                 type="file" 
