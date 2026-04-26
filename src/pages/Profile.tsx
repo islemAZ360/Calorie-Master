@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc, collection, getDocs, orderBy, query } from 'fireba
 import { db, auth } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
-import { User, Key, CheckCircle, XCircle, Loader2, Save, LogOut, BrainCircuit, Calculator, Activity } from 'lucide-react';
+import { User, Key, CheckCircle, XCircle, Loader2, Save, LogOut, BrainCircuit, Calculator, Activity, Target } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
