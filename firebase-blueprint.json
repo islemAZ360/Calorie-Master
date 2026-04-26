@@ -1,0 +1,38 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "HistoryEntry": {
+      "title": "HistoryEntry",
+      "description": "A record of user's calculations or food analyses",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["bmr", "food"] },
+        "timestamp": { "type": "number" },
+        "calories": { "type": "number" },
+        "details": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["userId", "type", "timestamp", "calories"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles."
+    },
+    "/users/{userId}/history/{entryId}": {
+      "schema": { "$ref": "#/entities/HistoryEntry" },
+      "description": "Stores history of user calculations and food analyses."
+    }
+  }
+}

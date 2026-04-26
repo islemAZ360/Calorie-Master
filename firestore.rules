@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'createdAt']) 
+        && data.keys().size() == 2
+        && data.email is string && data.email.size() <= 200
+        && data.createdAt is number;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidId(userId)
+                    && isValidUser(incoming())
+                    && incoming().createdAt == request.time.toMillis();
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidId(userId)
+                    && isValidUser(incoming())
+                    && incoming().createdAt == existing().createdAt;
+      
+      // History subcollection
+      match /history/{entryId} {
+        function isValidHistoryEntry(data) {
+          return data.keys().hasAll(['userId', 'type', 'timestamp', 'calories'])
+            && data.keys().size() >= 4 && data.keys().size() <= 6
+            && data.userId is string && data.userId == request.auth.uid
+            && data.type is string && data.type in ['bmr', 'food']
+            && data.timestamp is number
+            && data.calories is number
+            && (('details' in data) ? data.details is string : true)
+            && (('imageUrl' in data) ? data.imageUrl is string : true);
+        }
+
+        allow read, list: if isSignedIn() && request.auth.uid == userId; // Parent document constraints
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(entryId)
+                      && isValidHistoryEntry(incoming())
+                      && incoming().timestamp == request.time.toMillis()
+                      && exists(/databases/$(database)/documents/users/$(userId));
+        allow delete: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+  }
+}
