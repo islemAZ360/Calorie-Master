@@ -21,7 +21,7 @@ const ACTIVITY_LEVELS = [
 
 export default function Profile() {
   const { user } = useAuth();
-  const { t } = useSettings();
+  const { t, settings } = useSettings();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
