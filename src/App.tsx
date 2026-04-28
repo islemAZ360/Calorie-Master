@@ -71,13 +71,14 @@ function NavBar() {
   const { settings, t } = useSettings();
   
   return (
-    <header className="relative z-50 px-4 md:px-8 lg:px-12 py-3 flex justify-between items-center border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl">
+    <header className="relative z-50">
+      <div className="px-4 md:px-8 lg:px-12 py-3 flex justify-between items-center bg-zinc-950/80 backdrop-blur-2xl">
       <Link to="/" className="flex items-center gap-2.5 group">
-        <span className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg shadow-emerald-500/20">
+        <span className="w-10 h-10 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/25">
           <Scale className="h-5 w-5 text-white" />
         </span>
         <div>
-          <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent"
+          <h1 className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent"
           >Calorie Master</h1>
           <p className="text-slate-500 text-[10px] leading-none hidden sm:block">{t('app.tagline')}</p>
         </div>
@@ -110,7 +111,10 @@ function NavBar() {
             </NavLink>
           </>
         ) : (
-          <Link to="/login" className="px-4 py-2 text-sm text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full transition-all duration-300 font-bold ml-1 shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:scale-105">{t('nav.login')}</Link>
+          <Link to="/login" className="relative px-5 py-2 text-sm rounded-full font-bold ml-1 overflow-hidden hover:scale-105 transition-all hover:shadow-[0_0_25px_rgba(16,185,129,0.3)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 animate-gradient"></div>
+            <span className="relative z-10 text-zinc-950">{t('nav.login')}</span>
+          </Link>
         )}
       </nav>
 
@@ -123,9 +127,15 @@ function NavBar() {
           </div>
         )}
         {!user && (
-          <Link to="/login" className="px-3 py-1.5 text-xs text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full font-bold shadow-[0_0_12px_rgba(16,185,129,0.25)]">{t('nav.login')}</Link>
+          <Link to="/login" className="relative px-3 py-1.5 text-xs rounded-full font-bold overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500"></div>
+            <span className="relative z-10 text-zinc-950">{t('nav.login')}</span>
+          </Link>
         )}
       </div>
+      </div>
+      {/* Gradient line under navbar */}
+      <div className="h-[1px] bg-gradient-to-r from-transparent via-emerald-500/40 to-transparent"></div>
     </header>
   );
 }
@@ -220,11 +230,11 @@ export default function App() {
       <AuthProvider>
         <SettingsProvider>
           <BrowserRouter>
-            <div className="min-h-screen bg-zinc-950 text-slate-200 font-sans relative overflow-x-hidden flex flex-col pb-16 md:pb-0">
+            <div className="min-h-screen bg-zinc-950 text-slate-200 font-sans relative overflow-x-hidden flex flex-col pb-16 md:pb-0 noise">
               {/* Background Ambient Glows */}
-              <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.06)_0%,transparent_60%)] -translate-y-1/2 translate-x-1/3 pointer-events-none transform-gpu"></div>
-              <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.06)_0%,transparent_60%)] translate-y-1/3 -translate-x-1/4 pointer-events-none transform-gpu"></div>
-              <div className="fixed top-1/2 left-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.03)_0%,transparent_60%)] -translate-x-1/2 -translate-y-1/2 pointer-events-none transform-gpu"></div>
+              <div className="fixed top-0 right-0 w-[700px] h-[700px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_55%)] -translate-y-1/3 translate-x-1/4 pointer-events-none transform-gpu"></div>
+              <div className="fixed bottom-0 left-0 w-[700px] h-[700px] bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.07)_0%,transparent_55%)] translate-y-1/4 -translate-x-1/5 pointer-events-none transform-gpu"></div>
+              <div className="fixed top-1/2 left-1/2 w-[900px] h-[900px] bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.05)_0%,transparent_55%)] -translate-x-1/2 -translate-y-1/2 pointer-events-none transform-gpu"></div>
 
               <Toaster 
                 position="top-center" 
