@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Image as ImageIcon, Loader2, Info, KeyRound, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Camera, Loader2, Info, CheckCircle2, RotateCcw } from 'lucide-react';
 import { GoogleGenAI } from '@google/genai';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { db } from '../firebase';
-import { collection, addDoc, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
-import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
-import { Link } from 'react-router-dom';
+import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { handleFirestoreError, OperationType, updateStreak } from '../lib/firestoreUtils';
 import { motion } from 'motion/react';
 import toast from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
@@ -37,7 +36,10 @@ export default function Scanner() {
         );
         const snapshot = await getDocs(q);
         let sum = 0;
-        snapshot.forEach(doc => sum += doc.data().calories || 0);
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.type !== 'water') sum += data.calories || 0;
+        });
         setTodayCalories(sum);
       } catch (err) {
         console.error(err);
@@ -45,6 +47,7 @@ export default function Scanner() {
     };
     fetchTodayCalories();
   }, [user]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getAiClient = () => {
@@ -60,7 +63,7 @@ export default function Scanner() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImageSrc(reader.result as string);
-        setResult(null); // Clear old results
+        setResult(null);
       };
       reader.readAsDataURL(file);
     }
@@ -74,11 +77,9 @@ export default function Scanner() {
 
     try {
       const ai = getAiClient();
-      // 1. Convert Base64 to format expected by GenAI
       const base64Data = imageSrc.split(',')[1];
       const mimeType = imageSrc.split(';')[0].split(':')[1];
 
-      // 2. Prepare the prompt based on mode
       let prompt = `You are an expert nutritionist. I am showing you an image of ${mode === 'meal' ? 'a prepared meal' : 'raw ingredients'}.
 Please estimate the total calories in this image.
 If the food or ingredients are NOT clear enough or somewhat hidden, respond exactly with "UNCLEAR: Please list the ingredients".
@@ -99,7 +100,6 @@ Otherwise, respond with a JSON object ONLY, in this exact format:
          prompt += `\n\nAdditional user notes about this food/item to help you with the analysis: "${extraInfo.trim()}"`;
       }
 
-      // 3. Call Gemini API
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: [
@@ -198,7 +198,7 @@ Respond with a JSON object ONLY, in this exact format:
     } finally {
        setLoading(false);
     }
-  }
+  };
 
   const handleGenerateRecipe = async () => {
     if (!result) return;
@@ -229,7 +229,6 @@ Respond with a JSON object ONLY, in this exact format:
   const checkDailyCalories = async (newCalories: number) => {
     if (!user || !settings.targetCalories) return;
     
-    // Check if user has exceeded their daily limit
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     
@@ -242,7 +241,8 @@ Respond with a JSON object ONLY, in this exact format:
       
       let sum = 0;
       snapshot.forEach(doc => {
-        sum += doc.data().calories || 0;
+        const data = doc.data();
+        if (data.type !== 'water') sum += data.calories || 0;
       });
       
       sum += newCalories; 
@@ -271,36 +271,19 @@ Respond with a JSON object ONLY, in this exact format:
           carbs: carbs || 0,
           fat: fat || 0,
           details: details,
-          // Omitting imageUrl to save DB space, but we could upload it to storage
         });
 
-        // Streak Logic
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        let currentStreak = settings.streak || 0;
-        const lastLog = settings.lastLogDate ? new Date(settings.lastLogDate) : null;
-        
-        if (!lastLog || lastLog.getTime() < today) {
-          const yesterday = new Date(today);
-          yesterday.setDate(yesterday.getDate() - 1);
-          
-          if (lastLog && lastLog.getTime() === yesterday.getTime()) {
-            currentStreak += 1;
-          } else if (!lastLog || lastLog.getTime() < yesterday.getTime()) {
-            currentStreak = 1;
-          }
-          
-          await setDoc(doc(db, 'users', user.uid), {
-            streak: currentStreak,
-            lastLogDate: today
-          }, { merge: true });
-        }
+        // Use consolidated streak logic
+        await updateStreak(user.uid, settings.streak, settings.lastLogDate);
+
+        // Update today's calorie count in state
+        setTodayCalories(prev => prev + calories);
 
         await checkDailyCalories(calories);
       } catch (err) {
         handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/history`);
       }
-  }
+  };
 
   return (
     <motion.div 
@@ -309,10 +292,10 @@ Respond with a JSON object ONLY, in this exact format:
       exit={{ opacity: 0, y: -20 }}
       className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
     >
-       <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+       <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
-            <div className="bg-emerald-500/10 p-2.5 rounded-xl border border-emerald-500/20">
-              <Camera size={22} className="text-emerald-500" />
+            <div className="bg-gradient-to-br from-emerald-500/20 to-teal-500/10 p-2.5 rounded-xl border border-emerald-500/20">
+              <Camera size={22} className="text-emerald-400" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">{t('scanner.title')}</h2>
@@ -321,16 +304,16 @@ Respond with a JSON object ONLY, in this exact format:
           </div>
 
           {/* Mode Selection */}
-          <div className="flex bg-zinc-900 rounded-xl p-1 border border-white/10 mb-6">
+          <div className="flex bg-zinc-900/80 rounded-xl p-1 border border-white/10 mb-6">
             <button
               onClick={() => setMode('meal')}
-              className={`flex-1 py-3 rounded-lg font-bold transition-colors ${mode === 'meal' ? 'bg-emerald-500 text-zinc-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-3 rounded-lg font-bold transition-all duration-200 ${mode === 'meal' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}
             >
               {t('scanner.mode.meal')}
             </button>
             <button
               onClick={() => setMode('ingredients')}
-              className={`flex-1 py-3 rounded-lg font-bold transition-colors ${mode === 'ingredients' ? 'bg-emerald-500 text-zinc-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-3 rounded-lg font-bold transition-all duration-200 ${mode === 'ingredients' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}
             >
               {t('scanner.mode.ingredients')}
             </button>
@@ -341,7 +324,7 @@ Respond with a JSON object ONLY, in this exact format:
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-emerald-500/30 rounded-2xl p-16 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-500/5 hover:border-emerald-500/50 transition-all duration-300 group"
             >
-              <div className="w-20 h-20 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-300 mb-5">
+              <div className="w-20 h-20 bg-gradient-to-br from-emerald-500/15 to-teal-500/10 rounded-2xl flex items-center justify-center text-emerald-500 group-hover:scale-110 group-hover:bg-emerald-500/20 transition-all duration-300 mb-5 shadow-lg shadow-emerald-500/10">
                 <Camera size={36} />
               </div>
               <p className="text-white font-semibold mb-1 text-lg">{t('scanner.upload.title')}</p>
@@ -394,13 +377,13 @@ Respond with a JSON object ONLY, in this exact format:
                                 value={extraInfo}
                                 onChange={(e) => setExtraInfo(e.target.value)}
                                 placeholder={t('scanner.extra.placeholder')}
-                                className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-emerald-500 min-h-[80px] text-sm"
+                                className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 min-h-[80px] text-sm transition-all"
                             />
                         )}
                         
                         <button
                           onClick={analyzeImage}
-                          className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-4 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2"
+                          className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold py-4 rounded-xl transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 hover:-translate-y-0.5"
                         >
                           <span>{mode === 'meal' ? t('scanner.action.analyze.meal') : t('scanner.action.analyze.ingredients')}</span>
                         </button>
@@ -415,7 +398,11 @@ Respond with a JSON object ONLY, in this exact format:
                 )}
 
                 {result?.unclear && (
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 text-amber-200/90 animate-in fade-in zoom-in-95">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 text-amber-200/90"
+                    >
                         <div className="flex items-start gap-3 mb-4">
                             <Info className="text-amber-400 mt-1 shrink-0" />
                             <div>
@@ -428,7 +415,7 @@ Respond with a JSON object ONLY, in this exact format:
                                 value={manualIngredients}
                                 onChange={(e) => setManualIngredients(e.target.value)}
                                 placeholder={t('scanner.unclear.placeholder')}
-                                className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-emerald-500 min-h-[100px]"
+                                className="w-full bg-black/30 border border-white/10 rounded-xl p-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 min-h-[100px] transition-all"
                                 required
                             />
                             <button
@@ -438,13 +425,18 @@ Respond with a JSON object ONLY, in this exact format:
                                 {t('scanner.unclear.button')}
                             </button>
                         </form>
-                    </div>
+                    </motion.div>
                 )}
 
                 {result && !result.unclear && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 text-emerald-100 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-4">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="bg-emerald-500/[0.08] border border-emerald-500/20 rounded-2xl p-6 text-emerald-100 flex flex-col items-center text-center"
+                    >
                         <span className="text-slate-400 text-sm uppercase tracking-wider mb-2 font-semibold">{t('scanner.success.title')}</span>
-                        <span className="text-5xl font-black text-emerald-400 mb-4">{result.calories}</span>
+                        <span className="text-5xl font-black text-emerald-400 mb-4" style={{ textShadow: '0 0 30px rgba(16,185,129,0.3)' }}>{result.calories}</span>
                         
                         {/* Impact Bar */}
                         {settings.targetCalories && (
@@ -454,8 +446,8 @@ Respond with a JSON object ONLY, in this exact format:
                                  <span>{settings.targetCalories} kcal {settings.language === 'ar' ? 'الهدف' : 'Target'}</span>
                               </div>
                               <div className="h-2 w-full bg-black/40 rounded-full overflow-hidden flex">
-                                 <div className="h-full bg-emerald-500/50" style={{ width: `${Math.min((todayCalories / settings.targetCalories) * 100, 100)}%` }}></div>
-                                 <div className="h-full bg-emerald-400" style={{ width: `${Math.min((result.calories / settings.targetCalories) * 100, 100)}%` }}></div>
+                                 <div className="h-full bg-emerald-500/50 transition-all duration-500" style={{ width: `${Math.min(((todayCalories - result.calories) / settings.targetCalories) * 100, 100)}%` }}></div>
+                                 <div className="h-full bg-emerald-400 transition-all duration-500" style={{ width: `${Math.min((result.calories / settings.targetCalories) * 100, 100)}%` }}></div>
                               </div>
                               <div className="text-[10px] text-right text-emerald-400 mt-1">
                                  +{Math.round((result.calories / settings.targetCalories) * 100)}% {settings.language === 'ar' ? 'من هدفك' : 'of daily goal'}
@@ -465,22 +457,22 @@ Respond with a JSON object ONLY, in this exact format:
                         
                         {(result.protein !== undefined || result.carbs !== undefined || result.fat !== undefined) && (
                            <div className="grid grid-cols-3 gap-2 w-full mb-6">
-                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center">
+                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center border border-white/5">
                                  <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Protein</span>
                                  <span className="text-xl font-bold text-rose-400">{result.protein}g</span>
                               </div>
-                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center">
+                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center border border-white/5">
                                  <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Carbs</span>
                                  <span className="text-xl font-bold text-amber-400">{result.carbs}g</span>
                               </div>
-                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center">
+                              <div className="bg-black/30 p-3 rounded-xl flex flex-col items-center border border-white/5">
                                  <span className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Fat</span>
                                  <span className="text-xl font-bold text-blue-400">{result.fat}g</span>
                               </div>
                            </div>
                         )}
 
-                        <div className="bg-black/30 p-4 rounded-xl text-sm leading-relaxed text-left w-full" dir={settings.language === 'ar' ? 'rtl' : 'ltr'}>
+                        <div className="bg-black/30 p-4 rounded-xl text-sm leading-relaxed text-left w-full border border-white/5" dir={settings.language === 'ar' ? 'rtl' : 'ltr'}>
                            <strong className="text-emerald-400 block mb-2">{t('scanner.success.breakdown')}</strong>
                            {result.details}
                         </div>
@@ -520,12 +512,12 @@ Respond with a JSON object ONLY, in this exact format:
                         {/* Scan New Button */}
                         <button
                           onClick={() => { setResult(null); setImageSrc(null); setRecipe(null); setManualIngredients(''); }}
-                          className="w-full mt-6 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+                          className="w-full mt-6 glass hover:bg-white/10 text-slate-300 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
                         >
                           <RotateCcw size={18} />
                           <span>{settings.language === 'ar' ? 'مسح وجبة جديدة' : 'Scan New Meal'}</span>
                         </button>
-                    </div>
+                    </motion.div>
                 )}
              </div>
           )}

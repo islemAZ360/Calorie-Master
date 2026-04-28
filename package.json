@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "calorie-master",
+  "description": "AI-powered calorie tracking and nutrition analysis app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -21,9 +22,10 @@
     "motion": "^12.23.24",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.14.2",
-    "recharts": "^3.8.1",
-    "vite": "^6.2.0"
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",
@@ -32,8 +34,6 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.21",
-    "react-hot-toast": "^2.6.0",
-    "react-markdown": "^10.1.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",

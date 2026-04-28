@@ -198,7 +198,7 @@ export default function Calculator() {
       >
         {/* Input Panel */}
         <section className="lg:col-span-5 flex flex-col gap-6 w-full">
-          <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+          <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl">
             <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
               <h2 className="text-xl font-semibold text-white">{t('calculator.personalData')}</h2>
               <div className="flex bg-zinc-900 rounded-lg p-1 border border-white/10">
@@ -400,7 +400,7 @@ export default function Calculator() {
 
               <button
                 type="submit"
-                className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-4 rounded-2xl shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-6 outline-none"
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold py-4 rounded-2xl shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-6 outline-none"
               >
                 <span>{t('calculator.update')}</span>
               </button>
@@ -558,9 +558,9 @@ export default function Calculator() {
               </div>
             </div>
           ) : (
-            <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-12 flex-1 flex flex-col items-center justify-center shadow-2xl backdrop-blur-sm text-center border-dashed border-white/20 h-full min-h-[400px]">
-              <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center border border-white/10 mb-6 shadow-inner">
-                <Activity size={40} strokeWidth={1} className="text-emerald-500/40" />
+            <div className="glass-strong rounded-3xl p-6 md:p-12 flex-1 flex flex-col items-center justify-center shadow-2xl text-center border-dashed border-white/20 h-full min-h-[400px]">
+              <div className="w-24 h-24 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 rounded-full flex items-center justify-center border border-emerald-500/10 mb-6 shadow-inner animate-float">
+                <Activity size={40} strokeWidth={1} className="text-emerald-500/50" />
               </div>
               <h3 className="text-2xl font-semibold text-white mb-3">{t('calculator.empty.title')}</h3>
               <p className="text-slate-400 mt-2 max-w-sm text-center leading-relaxed">

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { Component, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { Scale, History as HistoryIcon, Camera, LogIn, User, Flame, Home as HomeIcon } from 'lucide-react';
+import { Scale, History as HistoryIcon, Camera, User, Flame, Home as HomeIcon, Calculator as CalcIcon, AlertTriangle } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SettingsProvider, useSettings } from './contexts/SettingsContext';
-import Calculator from './pages/Calculator';
+import CalculatorPage from './pages/Calculator';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import History from './pages/History';
@@ -11,16 +11,53 @@ import Scanner from './pages/Scanner';
 import Profile from './pages/Profile';
 import { Toaster } from 'react-hot-toast';
 
+/* ─────────────── Error Boundary ─────────────── */
+interface ErrorBoundaryState { hasError: boolean; error?: Error }
+class ErrorBoundary extends Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+  static getDerivedStateFromError(error: Error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-8">
+          <div className="glass-strong rounded-3xl p-10 max-w-md text-center">
+            <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-rose-500/20">
+              <AlertTriangle size={32} className="text-rose-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Something went wrong</h2>
+            <p className="text-slate-400 text-sm mb-6 leading-relaxed">{this.state.error?.message || 'An unexpected error occurred.'}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-6 py-3 rounded-xl transition-colors"
+            >
+              Reload App
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* ─────────────── Scroll to Top on Route Change ─────────────── */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, [pathname]);
+  return null;
+}
+
+/* ─────────────── Desktop Nav Link ─────────────── */
 function NavLink({ to, children, className = '' }: { to: string; children: React.ReactNode; className?: string }) {
   const location = useLocation();
   const isActive = location.pathname === to;
   return (
     <Link
       to={to}
-      className={`px-4 py-2 text-sm rounded-full transition-all duration-200 font-medium flex items-center gap-2 ${
+      className={`px-3 py-2 text-sm rounded-full transition-all duration-200 font-medium flex items-center gap-1.5 ${
         isActive
-          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-          : 'text-slate-300 hover:text-white hover:bg-white/10'
+          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+          : 'text-slate-400 hover:text-white hover:bg-white/10'
       } ${className}`}
     >
       {children}
@@ -28,106 +65,195 @@ function NavLink({ to, children, className = '' }: { to: string; children: React
   );
 }
 
+/* ─────────────── Desktop Navbar ─────────────── */
 function NavBar() {
   const { user } = useAuth();
   const { settings, t } = useSettings();
   
   return (
-    <header className="relative z-10 px-6 md:px-12 py-4 flex flex-col sm:flex-row justify-between items-center border-b border-white/5 bg-zinc-950/50 backdrop-blur-sm gap-4">
-      <Link to="/" className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 group">
-        <span className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center group-hover:bg-emerald-400 transition-colors">
-          <Scale className="h-6 w-6 text-zinc-950" />
+    <header className="relative z-50 px-4 md:px-8 lg:px-12 py-3 flex justify-between items-center border-b border-white/5 bg-zinc-950/70 backdrop-blur-xl">
+      <Link to="/" className="flex items-center gap-2.5 group">
+        <span className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-lg shadow-emerald-500/20">
+          <Scale className="h-5 w-5 text-white" />
         </span>
         <div>
-          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent group-hover:from-emerald-300 group-hover:to-teal-400 transition-all duration-300">Calorie Master</h1>
-          <p className="text-slate-400 text-[10px] sm:text-xs">{t('app.tagline')}</p>
+          <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent"
+          >Calorie Master</h1>
+          <p className="text-slate-500 text-[10px] leading-none hidden sm:block">{t('app.tagline')}</p>
         </div>
       </Link>
       
-      <nav className="flex items-center gap-1.5 sm:gap-2 bg-white/5 p-1.5 rounded-full border border-white/10">
+      {/* Desktop nav — hidden on mobile, shown via bottom tab bar instead */}
+      <nav className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1 rounded-full border border-white/[0.06]">
         <NavLink to="/">
-          <HomeIcon size={16} /> <span className="hidden sm:inline">{settings.language === 'ar' ? 'الرئيسية' : 'Home'}</span>
+          <HomeIcon size={15} /> <span>{settings.language === 'ar' ? 'الرئيسية' : 'Home'}</span>
         </NavLink>
         <NavLink to="/calculator">
-          {t('nav.autocalc')}
+          <CalcIcon size={15} /> <span>{t('nav.autocalc')}</span>
         </NavLink>
         <NavLink to="/scanner">
-          <Camera size={16}/> <span className="hidden sm:inline">{t('nav.scanner')}</span>
+          <Camera size={15}/> <span>{t('nav.scanner')}</span>
         </NavLink>
         {user ? (
           <>
             {settings.streak && settings.streak > 0 && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-full font-bold text-sm shadow-[0_0_10px_rgba(249,115,22,0.2)]">
-                <Flame size={16} className="fill-orange-500 text-orange-500" />
+              <div className="flex items-center gap-1 px-2.5 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-full font-bold text-xs shadow-[0_0_10px_rgba(249,115,22,0.15)]">
+                <Flame size={14} className="fill-orange-500 text-orange-500" />
                 <span>{settings.streak}</span>
               </div>
             )}
             <NavLink to="/history">
-              <HistoryIcon size={16}/> <span className="hidden sm:inline">{t('nav.history')}</span>
+              <HistoryIcon size={15}/> <span>{t('nav.history')}</span>
             </NavLink>
             <NavLink to="/profile">
-              <User size={16}/> <span className="hidden sm:inline">{t('nav.profile')}</span>
+              <User size={15}/> <span>{t('nav.profile')}</span>
             </NavLink>
           </>
         ) : (
-          <Link to="/login" className="px-4 py-2 text-sm text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full transition-all duration-300 font-bold ml-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:scale-105">{t('nav.login')}</Link>
+          <Link to="/login" className="px-4 py-2 text-sm text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full transition-all duration-300 font-bold ml-1 shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:scale-105">{t('nav.login')}</Link>
         )}
       </nav>
+
+      {/* Mobile: just show streak + login on top bar */}
+      <div className="flex md:hidden items-center gap-2">
+        {user && settings.streak && settings.streak > 0 && (
+          <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-full font-bold text-xs">
+            <Flame size={12} className="fill-orange-500 text-orange-500" />
+            <span>{settings.streak}</span>
+          </div>
+        )}
+        {!user && (
+          <Link to="/login" className="px-3 py-1.5 text-xs text-zinc-950 bg-emerald-500 hover:bg-emerald-400 rounded-full font-bold shadow-[0_0_12px_rgba(16,185,129,0.25)]">{t('nav.login')}</Link>
+        )}
+      </div>
     </header>
   );
 }
 
+/* ─────────────── Mobile Bottom Tab Bar ─────────────── */
+function MobileTabBar() {
+  const { user } = useAuth();
+  const location = useLocation();
+  const { settings, t } = useSettings();
+
+  const tabs = [
+    { to: '/', icon: HomeIcon, label: settings.language === 'ar' ? 'الرئيسية' : 'Home' },
+    { to: '/calculator', icon: CalcIcon, label: t('nav.autocalc') },
+    { to: '/scanner', icon: Camera, label: t('nav.scanner') },
+    ...(user
+      ? [
+          { to: '/history', icon: HistoryIcon, label: t('nav.history') },
+          { to: '/profile', icon: User, label: t('nav.profile') },
+        ]
+      : []),
+  ];
+
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-zinc-950/90 backdrop-blur-xl border-t border-white/[0.06] bottom-nav-safe">
+      <div className="flex justify-around items-center py-2 px-1">
+        {tabs.map(({ to, icon: Icon, label }) => {
+          const isActive = location.pathname === to;
+          return (
+            <Link
+              key={to}
+              to={to}
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all duration-200 min-w-[56px] ${
+                isActive
+                  ? 'text-emerald-400'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'bg-emerald-500/15' : ''}`}>
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+              </div>
+              <span className={`text-[10px] font-medium leading-none ${isActive ? 'font-bold' : ''}`}>{label}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+/* ─────────────── Footer ─────────────── */
 function Footer() {
   return (
-    <footer className="relative z-10 px-6 py-6 border-t border-white/5 mt-auto">
-      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">
-        <div className="flex items-center gap-2">
-          <Scale className="w-4 h-4 text-emerald-500/50" />
-          <span>Calorie Master &copy; {new Date().getFullYear()}</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <span>Powered by Gemini AI</span>
-          <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-          <span>Built with React & Firebase</span>
+    <footer className="relative z-10 mt-auto hidden md:block">
+      <div className="h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+      <div className="px-6 py-5">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <Scale className="w-3.5 h-3.5 text-emerald-500/40" />
+            <span>Calorie Master &copy; {new Date().getFullYear()}</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span>Powered by Gemini AI</span>
+            <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
+            <span>Built with React & Firebase</span>
+          </div>
         </div>
       </div>
     </footer>
   );
 }
 
+/* ─────────────── 404 Page ─────────────── */
+function NotFound() {
+  return (
+    <div className="flex-1 flex items-center justify-center p-8 text-center">
+      <div className="glass-strong rounded-3xl p-10 max-w-md">
+        <div className="text-7xl font-black bg-gradient-to-br from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-4">404</div>
+        <h2 className="text-xl font-bold text-white mb-2">Page Not Found</h2>
+        <p className="text-slate-400 text-sm mb-6">The page you're looking for doesn't exist or has been moved.</p>
+        <Link to="/" className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-6 py-3 rounded-xl transition-colors inline-block">
+          Go Home
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────── App Root ─────────────── */
 export default function App() {
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <BrowserRouter>
-          <div className="min-h-screen bg-zinc-950 text-slate-200 font-sans relative overflow-x-hidden flex flex-col">
-            {/* Background Ambient Glows */}
-            <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.08)_0%,transparent_60%)] -translate-y-1/2 translate-x-1/3 pointer-events-none transform-gpu"></div>
-            <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.08)_0%,transparent_60%)] translate-y-1/3 -translate-x-1/4 pointer-events-none transform-gpu"></div>
+    <ErrorBoundary>
+      <AuthProvider>
+        <SettingsProvider>
+          <BrowserRouter>
+            <div className="min-h-screen bg-zinc-950 text-slate-200 font-sans relative overflow-x-hidden flex flex-col pb-16 md:pb-0">
+              {/* Background Ambient Glows */}
+              <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(16,185,129,0.06)_0%,transparent_60%)] -translate-y-1/2 translate-x-1/3 pointer-events-none transform-gpu"></div>
+              <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.06)_0%,transparent_60%)] translate-y-1/3 -translate-x-1/4 pointer-events-none transform-gpu"></div>
+              <div className="fixed top-1/2 left-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.03)_0%,transparent_60%)] -translate-x-1/2 -translate-y-1/2 pointer-events-none transform-gpu"></div>
 
-            <Toaster 
-              position="top-center" 
-              containerStyle={{ zIndex: 99999 }}
-              toastOptions={{ 
-                style: { background: '#18181b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } 
-              }} 
-            />
+              <Toaster 
+                position="top-center" 
+                containerStyle={{ zIndex: 99999 }}
+                toastOptions={{ 
+                  style: { background: '#18181b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '14px' },
+                  duration: 3000,
+                }} 
+              />
 
-            <NavBar />
-            
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/calculator" element={<Calculator />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/scanner" element={<Scanner />} />
-              <Route path="/history" element={<History />} />
-              <Route path="/profile" element={<Profile />} />
-            </Routes>
-            
-            <Footer />
-          </div>
-        </BrowserRouter>
-      </SettingsProvider>
-    </AuthProvider>
+              <ScrollToTop />
+              <NavBar />
+              
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/calculator" element={<CalculatorPage />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/scanner" element={<Scanner />} />
+                <Route path="/history" element={<History />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              
+              <Footer />
+              <MobileTabBar />
+            </div>
+          </BrowserRouter>
+        </SettingsProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

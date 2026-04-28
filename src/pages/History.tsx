@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { collection, query, orderBy, getDocs, doc, deleteDoc, addDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings } from '../contexts/SettingsContext';
-import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
-import { History as HistoryIcon, Activity, Camera, Leaf, Trash2, Droplets, Loader2 } from 'lucide-react';
+import { handleFirestoreError, OperationType, logWater, updateStreak } from '../lib/firestoreUtils';
+import { History as HistoryIcon, Activity, Camera, Trash2, Droplets, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import toast from 'react-hot-toast';
 
@@ -15,10 +15,29 @@ interface HistoryItem {
   type: string;
   timestamp: number;
   calories: number;
+  amount?: number;
   protein?: number;
   carbs?: number;
   fat?: number;
   details: string;
+}
+
+/* ─── Skeleton Loader ─── */
+function HistorySkeleton() {
+  return (
+    <div className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 flex flex-col gap-6 animate-pulse">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 skeleton h-48 rounded-3xl"></div>
+        <div className="skeleton h-48 rounded-3xl"></div>
+      </div>
+      <div className="skeleton h-8 w-40 rounded-lg"></div>
+      <div className="space-y-3">
+        <div className="skeleton h-24 rounded-2xl"></div>
+        <div className="skeleton h-24 rounded-2xl"></div>
+        <div className="skeleton h-24 rounded-2xl"></div>
+      </div>
+    </div>
+  );
 }
 
 export default function History() {
@@ -80,7 +99,7 @@ export default function History() {
   }, [history, settings.language]);
 
   if (loading) {
-    return <div className="max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 text-emerald-400 text-center py-20 font-bold">Loading...</div>
+    return <HistorySkeleton />;
   }
 
   const startOfDay = new Date();
@@ -90,7 +109,7 @@ export default function History() {
   const todayCalories = todayFoodItems.reduce((acc, item) => acc + item.calories, 0);
 
   const todayWaterItems = history.filter(item => item.type === 'water' && item.timestamp >= startOfDay.getTime());
-  const todayWaterCups = todayWaterItems.reduce((acc, item) => acc + item.calories, 0); // using calories field as "amount" for simplicity
+  const todayWaterCups = todayWaterItems.length;
 
   let progressTip = '';
   if (settings.targetCalories) {
@@ -109,6 +128,7 @@ export default function History() {
       try {
         await deleteDoc(doc(db, 'users', user.uid, 'history', id));
         setHistory(prev => prev.filter(item => item.id !== id));
+        toast.success(settings.language === 'ar' ? 'تم الحذف' : 'Deleted');
       } catch (err) {
         handleFirestoreError(err, OperationType.DELETE, `users/${user.uid}/history/${id}`);
         toast.error('Failed to delete history item.');
@@ -119,38 +139,10 @@ export default function History() {
   const handleAddWater = async () => {
     if (!user) return;
     try {
-      const newItem = {
-        userId: user.uid,
-        type: 'water',
-        timestamp: Date.now(),
-        calories: 1, // 1 cup/glass
-        details: settings.language === 'ar' ? 'كوب ماء (250 مل)' : '1 Glass of Water (250ml)',
-      };
-      const docRef = await addDoc(collection(db, 'users', user.uid, 'history'), newItem);
-      setHistory(prev => [{ id: docRef.id, ...newItem }, ...prev]);
-
-      // Streak Logic
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-      let currentStreak = settings.streak || 0;
-      const lastLog = settings.lastLogDate ? new Date(settings.lastLogDate) : null;
-      
-      if (!lastLog || lastLog.getTime() < today) {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (lastLog && lastLog.getTime() === yesterday.getTime()) {
-          currentStreak += 1;
-        } else if (!lastLog || lastLog.getTime() < yesterday.getTime()) {
-          currentStreak = 1;
-        }
-        
-        await setDoc(doc(db, 'users', user.uid), {
-          streak: currentStreak,
-          lastLogDate: today
-        }, { merge: true });
-      }
-
+      const { id, item } = await logWater(user.uid, settings.language);
+      setHistory(prev => [{ id, ...item } as unknown as HistoryItem, ...prev]);
+      await updateStreak(user.uid, settings.streak, settings.lastLogDate);
+      toast.success(settings.language === 'ar' ? 'تم تسجيل كوب ماء! 💧' : 'Water logged! +250ml 💧');
     } catch (err) {
       handleFirestoreError(err, OperationType.CREATE, `users/${user.uid}/history`);
     }
@@ -163,24 +155,26 @@ export default function History() {
       exit={{ opacity: 0, y: -20 }}
       className="flex-1 max-w-4xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
     >
-      {loading ? (
-        <div className="w-full flex flex-col items-center justify-center py-20 space-y-4">
-          <Loader2 className="animate-spin text-emerald-500" size={48} />
-        </div>
-      ) : (
-       <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+       <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl">
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             {settings.targetCalories && (
-              <div className="md:col-span-2 bg-black/20 border border-emerald-500/30 p-6 rounded-2xl flex flex-col xl:flex-row gap-6">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                className="md:col-span-2 bg-black/20 border border-emerald-500/20 p-6 rounded-2xl flex flex-col xl:flex-row gap-6"
+              >
                  <div className="flex-1 flex flex-col">
                      <h3 className="text-xl font-bold text-white mb-2">{t('history.progress.title')}</h3>
                      <p className="text-slate-400 text-sm mb-4">{progressTip}</p>
                      <div className="w-full bg-zinc-800 rounded-full h-3 mb-2 overflow-hidden mt-auto">
-                        <div 
+                        <motion.div 
+                           initial={{ width: 0 }}
+                           animate={{ width: `${Math.min((todayCalories / settings.targetCalories) * 100, 100)}%` }}
+                           transition={{ duration: 1, ease: 'easeOut' }}
                            className={`h-3 rounded-full ${todayCalories > settings.targetCalories ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                           style={{ width: `${Math.min((todayCalories / settings.targetCalories) * 100, 100)}%` }}
-                        ></div>
+                        ></motion.div>
                      </div>
                      <div className="flex justify-between text-xs text-slate-500 font-medium">
                          <span>0</span>
@@ -193,9 +187,9 @@ export default function History() {
                       <BarChart data={chartData}>
                         <Tooltip 
                           cursor={{fill: 'rgba(255,255,255,0.05)'}} 
-                          contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                          contentStyle={{ backgroundColor: '#18181b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '12px' }}
                         />
-                        <Bar dataKey="calories" radius={[4, 4, 0, 0]}>
+                        <Bar dataKey="calories" radius={[6, 6, 0, 0]}>
                           {chartData.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.calories > (settings.targetCalories || 2000) ? '#f43f5e' : '#10b981'} />
                           ))}
@@ -204,14 +198,19 @@ export default function History() {
                     </ResponsiveContainer>
                  </div>
 
-                 <div className="flex flex-col justify-center bg-white/5 p-4 rounded-xl shrink-0 xl:min-w-[120px]" dir="ltr">
+                 <div className="flex flex-col justify-center bg-white/5 p-4 rounded-xl shrink-0 xl:min-w-[120px] border border-white/5" dir="ltr">
                      <div className="text-[10px] text-slate-400 text-center uppercase tracking-widest mb-1">{t('history.progress.consumed')}</div>
                      <div className="text-2xl font-black text-emerald-400 tabular-nums tracking-tighter text-center">{Math.round(todayCalories)}</div>
                  </div>
-              </div>
+              </motion.div>
             )}
 
-            <div className="bg-black/20 border border-blue-500/30 p-6 rounded-2xl flex flex-col justify-between group">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="bg-black/20 border border-blue-500/20 p-6 rounded-2xl flex flex-col justify-between group"
+            >
                <div>
                   <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
                      <Droplets className="text-blue-400" size={20} />
@@ -238,17 +237,17 @@ export default function History() {
                  
                  <button 
                     onClick={handleAddWater}
-                    className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-3 rounded-xl transition-colors shrink-0 outline-none"
+                    className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 p-3 rounded-xl transition-all hover:scale-105 shrink-0 outline-none"
                     title={settings.language === 'ar' ? 'إضافة كوب ماء' : 'Add a glass of water'}
                  >
                     <Droplets size={20} className="fill-current" />
                  </button>
                </div>
-            </div>
+            </motion.div>
           </div>
 
           <div className="flex items-center gap-3 mb-8 border-b border-white/5 pb-4">
-             <div className="bg-emerald-500/10 p-2 rounded-lg">
+             <div className="bg-emerald-500/10 p-2 rounded-lg border border-emerald-500/20">
                 <HistoryIcon className="text-emerald-500 w-6 h-6" />
              </div>
              <h2 className="text-2xl font-bold text-white tracking-tight">{t('history.title')}</h2>
@@ -259,7 +258,7 @@ export default function History() {
                 <p className="text-slate-400 mb-2">{t('history.empty.title')}</p>
                 <p className="text-sm text-slate-500 mb-6">{t('history.empty.desc')}</p>
                 <div className="flex justify-center gap-4">
-                   <button onClick={() => navigate('/')} className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors">{t('history.action.calc')}</button>
+                   <button onClick={() => navigate('/')} className="glass hover:bg-white/10 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors">{t('history.action.calc')}</button>
                    <button onClick={() => navigate('/scanner')} className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 px-4 py-2 rounded-full text-sm font-bold transition-colors">{t('history.action.scan')}</button>
                 </div>
             </div>
@@ -297,7 +296,7 @@ export default function History() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95, height: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="bg-black/30 border border-white/5 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-white/5 transition-colors group"
+                            className="bg-black/30 border border-white/5 p-4 sm:p-5 rounded-2xl flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-white/[0.04] transition-colors group"
                          >
                           <div className={`p-3 rounded-xl shrink-0 ${item.type === 'bmr' ? 'bg-blue-500/10 text-blue-400' : item.type === 'water' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
                              {item.type === 'bmr' ? <Activity size={24} /> : item.type === 'water' ? <Droplets size={24} /> : <Camera size={24} />}
@@ -316,7 +315,11 @@ export default function History() {
                              </div>
                              <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed">{item.details}</p>
                           </div>
-                          {item.type !== 'water' && (
+                          {item.type === 'water' ? (
+                            <div className="sm:ml-4 flex flex-col items-start sm:items-end" dir="ltr">
+                               <span className="text-lg font-black text-cyan-400">{item.amount || 250}ml</span>
+                            </div>
+                          ) : item.type !== 'water' && (
                             <div className="sm:ml-4 flex flex-col items-start sm:items-end w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-white/5" dir="ltr">
                                <span className="text-2xl font-black tabular-nums tracking-tighter text-white">{Math.round(item.calories)}</span>
                                <span className="text-[10px] text-emerald-500 uppercase font-bold tracking-wider text-right">{t('history.calories')}</span>
@@ -338,7 +341,6 @@ export default function History() {
         </div>
           )}
        </div>
-      )}
     </motion.div>
   );
 }

@@ -1,4 +1,5 @@
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 
 export enum OperationType {
   CREATE = 'create',
@@ -45,4 +46,56 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   };
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
+}
+
+/**
+ * Consolidated streak update logic.
+ * Call after any food/water log to maintain the daily streak.
+ */
+export async function updateStreak(
+  userId: string,
+  currentStreak: number | undefined,
+  lastLogDate: number | undefined
+): Promise<void> {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  let streak = currentStreak || 0;
+  const lastLog = lastLogDate ? new Date(lastLogDate) : null;
+
+  if (!lastLog || lastLog.getTime() < today) {
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (lastLog && lastLog.getTime() >= yesterday.getTime() && lastLog.getTime() < today) {
+      streak += 1;
+    } else {
+      streak = 1;
+    }
+
+    await setDoc(doc(db, 'users', userId), {
+      streak,
+      lastLogDate: today
+    }, { merge: true });
+  }
+}
+
+/**
+ * Log a glass of water (250ml) for the given user.
+ * Returns the newly created doc ID and the item data.
+ */
+export async function logWater(
+  userId: string,
+  language: 'en' | 'ar'
+): Promise<{ id: string; item: Record<string, unknown> }> {
+  const item = {
+    userId,
+    type: 'water',
+    timestamp: Date.now(),
+    calories: 0,
+    amount: 250,
+    details: language === 'ar' ? 'كوب ماء (250 مل)' : '1 Glass of Water (250ml)',
+  };
+
+  const docRef = await addDoc(collection(db, 'users', userId, 'history'), item);
+  return { id: docRef.id, item };
 }

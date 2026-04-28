@@ -238,10 +238,13 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
+      className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6 animate-pulse"
     >
-      <div className="w-full flex flex-col items-center justify-center py-20 space-y-4">
-        <Loader2 className="animate-spin text-emerald-500" size={48} />
+      <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl">
+        <div className="skeleton h-12 w-48 rounded-xl mb-6"></div>
+        <div className="skeleton h-40 rounded-2xl mb-6"></div>
+        <div className="skeleton h-32 rounded-2xl mb-6"></div>
+        <div className="skeleton h-48 rounded-2xl"></div>
       </div>
     </motion.div>
   );
@@ -253,7 +256,7 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
       exit={{ opacity: 0, y: -20 }}
       className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-8 relative z-10 flex flex-col gap-6"
     >
-       <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+       <div className="glass-strong rounded-3xl p-6 md:p-8 shadow-2xl">
           
           <div className="flex items-center justify-between mb-8 border-b border-white/5 pb-4">
              <div className="flex items-center gap-3">
@@ -547,7 +550,7 @@ ${settings.language === 'ar' ? 'CRITICAL: You MUST write your analysis entirely 
             <button
               type="submit"
               disabled={saving}
-              className="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-4 rounded-xl shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2 mt-8 disabled:opacity-50 transition-colors"
+              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-bold py-4 rounded-xl shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] flex items-center justify-center gap-2 mt-8 disabled:opacity-50 transition-all hover:-translate-y-0.5"
             >
               {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
               <span>{t('profile.action.save')}</span>

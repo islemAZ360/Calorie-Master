@@ -4,7 +4,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'fire
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { handleFirestoreError, OperationType } from '../lib/firestoreUtils';
-import { LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { LogIn, UserPlus, Loader2, Mail, Lock } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -85,16 +85,36 @@ export default function Login() {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       transition={{ duration: 0.5, ease: 'easeOut' }}
-      className="flex-1 flex items-center justify-center p-6 relative z-10"
+      className="flex-1 flex items-center justify-center p-6 relative z-10 overflow-hidden"
     >
-      <div className="w-full max-w-md bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl backdrop-blur-sm">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-emerald-500/[0.04] rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-72 h-72 bg-cyan-500/[0.04] rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-500/[0.03] rounded-full blur-3xl animate-float" style={{ animationDelay: '4s' }}></div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        className="w-full max-w-md glass-strong rounded-3xl p-8 shadow-2xl relative"
+      >
+        {/* Subtle top glow */}
+        <div className="absolute -top-px left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent"></div>
+
         <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20">
-            {isLogin ? <LogIn size={32} className="text-emerald-500" /> : <UserPlus size={32} className="text-emerald-500" />}
-          </div>
+          <motion.div 
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.3 }}
+            className="w-16 h-16 bg-gradient-to-br from-emerald-500/20 to-teal-500/10 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-lg shadow-emerald-500/10"
+          >
+            {isLogin ? <LogIn size={32} className="text-emerald-400" /> : <UserPlus size={32} className="text-emerald-400" />}
+          </motion.div>
         </div>
         
         <h2 className="text-2xl font-bold text-white mb-2 text-center">
@@ -109,8 +129,8 @@ export default function Login() {
         
         {error && (
           <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
             className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3 rounded-xl text-sm mb-6"
           >
             {error}
@@ -120,29 +140,37 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs uppercase tracking-wider text-slate-500 mb-2 pl-1">{t('login.label.email')}</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 text-white transition-colors shadow-inner"
-              required
-            />
+            <div className="relative">
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-zinc-900/80 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 text-white transition-all shadow-inner"
+                placeholder={settings.language === 'ar' ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                required
+              />
+            </div>
           </div>
           <div>
             <label className="block text-xs uppercase tracking-wider text-slate-500 mb-2 pl-1">{t('login.label.password')}</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 text-white transition-colors shadow-inner"
-              required
-            />
+            <div className="relative">
+              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-zinc-900/80 border border-white/10 rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 text-white transition-all shadow-inner"
+                placeholder={settings.language === 'ar' ? 'أدخل كلمة المرور' : 'Enter your password'}
+                required
+              />
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-zinc-950 font-bold py-4 rounded-2xl shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] transition-transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-6 outline-none"
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 text-zinc-950 font-bold py-4 rounded-2xl shadow-[0_10px_20px_-10px_rgba(16,185,129,0.5)] transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 mt-6 outline-none"
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : (isLogin ? <LogIn size={18} /> : <UserPlus size={18} />)}
             <span>{isLogin ? t('login.action.login') : t('login.action.signup')}</span>
@@ -153,12 +181,12 @@ export default function Login() {
           <button
             type="button"
             onClick={() => { setIsLogin(!isLogin); setError(''); }}
-            className="text-sm text-slate-400 hover:text-white transition-colors"
+            className="text-sm text-slate-400 hover:text-emerald-400 transition-colors"
           >
             {isLogin ? t('login.toggle.toSignup') : t('login.toggle.toLogin')}
           </button>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
